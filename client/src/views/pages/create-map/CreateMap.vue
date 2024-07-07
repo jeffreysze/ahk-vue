@@ -2,24 +2,6 @@
 import avatar1 from '@images/avatars/avatar-1.png'
 import map from '@images/map/map.jpg'
 import nipplejs from 'nipplejs'
-import { onMounted } from 'vue';
-
-onMounted(()=>{
-  setTimeout(function(){
-    var options = {
-      zone: document.getElementById('joystick_zone'),
-      mode: 'static',
-      position: {left: '50%', top: '50%'},
-      color: 'red'
-    } 
-
-    var manager = nipplejs.create(options);
-
-    manager.on('dir', function(evt, data){
-      console.log(data)
-    });
-  }, 1000)
-})
 
 const accountData = {
   avatarImg: avatar1,
@@ -141,279 +123,130 @@ const mapping = ref(false);
       <div id="joystick_zone"></div>
     </VCol>
     
-  </VRow>      
-  <VRow>
-    <VCol cols="12">
-      <VCard title="Account Details">
-        <VCardText class="d-flex">
-          <!-- 👉 Avatar -->
-          <VAvatar
-            rounded="lg"
-            size="100"
-            class="me-6"
-            :image="accountDataLocal.avatarImg"
-          />
-
-          <!-- 👉 Upload Photo -->
-          <form class="d-flex flex-column justify-center gap-5">
-            <div class="d-flex flex-wrap gap-2">
-              <VBtn
-                color="primary"
-                @click="refInputEl?.click()"
-              >
-                <VIcon
-                  icon="bx-cloud-upload"
-                  class="d-sm-none"
-                />
-                <span class="d-none d-sm-block">Upload new photo</span>
-              </VBtn>
-
-              <input
-                ref="refInputEl"
-                type="file"
-                name="file"
-                accept=".jpeg,.png,.jpg,GIF"
-                hidden
-                @input="changeAvatar"
-              >
-
-              <VBtn
-                type="reset"
-                color="error"
-                variant="tonal"
-                @click="resetAvatar"
-              >
-                <span class="d-none d-sm-block">Reset</span>
-                <VIcon
-                  icon="bx-refresh"
-                  class="d-sm-none"
-                />
-              </VBtn>
-            </div>
-
-            <p class="text-body-1 mb-0">
-              Allowed JPG, GIF or PNG. Max size of 800K
-            </p>
-          </form>
-        </VCardText>
-
-        <VDivider />
-
-        <VCardText>
-          <!-- 👉 Form -->
-          <VForm class="mt-6">
-            <VRow>
-              <!-- 👉 First Name -->
-              <VCol
-                md="6"
-                cols="12"
-              >
-                <VTextField
-                  v-model="accountDataLocal.firstName"
-                  placeholder="John"
-                  label="First Name"
-                />
-              </VCol>
-
-              <!-- 👉 Last Name -->
-              <VCol
-                md="6"
-                cols="12"
-              >
-                <VTextField
-                  v-model="accountDataLocal.lastName"
-                  placeholder="Doe"
-                  label="Last Name"
-                />
-              </VCol>
-
-              <!-- 👉 Email -->
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VTextField
-                  v-model="accountDataLocal.email"
-                  label="E-mail"
-                  placeholder="johndoe@gmail.com"
-                  type="email"
-                />
-              </VCol>
-
-              <!-- 👉 Organization -->
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VTextField
-                  v-model="accountDataLocal.org"
-                  label="Organization"
-                  placeholder="ThemeSelection"
-                />
-              </VCol>
-
-              <!-- 👉 Phone -->
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VTextField
-                  v-model="accountDataLocal.phone"
-                  label="Phone Number"
-                  placeholder="+1 (917) 543-9876"
-                />
-              </VCol>
-
-              <!-- 👉 Address -->
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VTextField
-                  v-model="accountDataLocal.address"
-                  label="Address"
-                  placeholder="123 Main St, New York, NY 10001"
-                />
-              </VCol>
-
-              <!-- 👉 State -->
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VTextField
-                  v-model="accountDataLocal.state"
-                  label="State"
-                  placeholder="New York"
-                />
-              </VCol>
-
-              <!-- 👉 Zip Code -->
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VTextField
-                  v-model="accountDataLocal.zip"
-                  label="Zip Code"
-                  placeholder="10001"
-                />
-              </VCol>
-
-              <!-- 👉 Country -->
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VSelect
-                  v-model="accountDataLocal.country"
-                  label="Country"
-                  :items="['USA', 'Canada', 'UK', 'India', 'Australia']"
-                  placeholder="Select Country"
-                />
-              </VCol>
-
-              <!-- 👉 Language -->
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VSelect
-                  v-model="accountDataLocal.language"
-                  label="Language"
-                  placeholder="Select Language"
-                  :items="['English', 'Spanish', 'Arabic', 'Hindi', 'Urdu']"
-                />
-              </VCol>
-
-              <!-- 👉 Timezone -->
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VSelect
-                  v-model="accountDataLocal.timezone"
-                  label="Timezone"
-                  placeholder="Select Timezone"
-                  :items="timezones"
-                  :menu-props="{ maxHeight: 200 }"
-                />
-              </VCol>
-
-              <!-- 👉 Currency -->
-              <VCol
-                cols="12"
-                md="6"
-              >
-                <VSelect
-                  v-model="accountDataLocal.currency"
-                  label="Currency"
-                  placeholder="Select Currency"
-                  :items="currencies"
-                  :menu-props="{ maxHeight: 200 }"
-                />
-              </VCol>
-
-              <!-- 👉 Form Actions -->
-              <VCol
-                cols="12"
-                class="d-flex flex-wrap gap-4"
-              >
-                <VBtn>Save changes</VBtn>
-
-                <VBtn
-                  color="secondary"
-                  variant="tonal"
-                  type="reset"
-                  @click.prevent="resetForm"
-                >
-                  Reset
-                </VBtn>
-              </VCol>
-            </VRow>
-          </VForm>
-        </VCardText>
-      </VCard>
-    </VCol>
-
-    <VCol cols="12">
-      <!-- 👉 Deactivate Account -->
-      <VCard title="Deactivate Account">
-        <VCardText>
-          <div>
-            <VCheckbox
-              v-model="isAccountDeactivated"
-              label="I confirm my account deactivation"
-            />
-          </div>
-
-          <VBtn
-            :disabled="!isAccountDeactivated"
-            color="error"
-            class="mt-3"
-          >
-            Deactivate Account
-          </VBtn>
-        </VCardText>
-      </VCard>
-    </VCol>
   </VRow>
-  <v-bottom-sheet inset>
-  
-
-  <v-card
-    title="Bottom Sheet"
-    text="Lorem ipsum dolor sit amet consectetur, adipisicing elit. Ut, eos? Nulla aspernatur odio rem, culpa voluptatibus eius debitis dolorem perspiciatis asperiores sed consectetur praesentium! Delectus et iure maxime eaque exercitationem!"
-  ></v-card>
-</v-bottom-sheet>
 </template>
 
+
+<script>
+export default {
+  data() {
+    return {
+      options: null,
+      manager: null,
+      panel: [0,1,2],
+      sequence_mode: "1",
+      added_to_plan: [],
+      data: [
+        { name: 'John', age: 30 },
+        { name: 'Jane', age: 25 },
+        { name: 'Bob', age: 35 },
+        { name: 'Alice', age: 28 },
+      ],
+      map_points: [
+        {
+          x: 9.07,
+          y: -0.55,
+          theta: -90.00,
+          label: "Pt1",
+        },
+        {
+          x: 10.43,
+          y: -24.02,
+          theta: -90.00,
+          label: "Pt2",
+        },
+        {
+          x: 10.28,
+          y: -44.29,
+          theta: -90.00,
+          label: "Pt3",
+        },
+        {
+          x: 9.92,
+          y: -56.84,
+          theta: 180.00,
+          label: "Pt4",
+        },
+        {
+          x: -7.36,
+          y: -57.90,
+          theta: 180.00,
+          label: "Pt5",
+        },
+        {
+          x: -15.73,
+          y: -39.91,
+          theta: 90.00,
+          label: "Pt6",
+        },
+        {
+          x: -16.05,
+          y: -9.24,
+          theta: 0.00,
+          label: "Pt7",
+        },
+        {
+          x: -10.09,
+          y: 17.96,
+          theta: 0.00,
+          label: "Pt8",
+        },
+        {
+          x: 7.90,
+          y: 17.78,
+          theta: 0.00,
+          label: "Pt9",
+        },
+        {
+          x: 9.25,
+          y: 5.75,
+          theta: -90.00,
+          label: "Pt10",
+        },
+        {
+          x: 1.00,
+          y: 0.05,
+          theta: 0.00,
+          label: "Charge",
+        },
+        {
+          x: 7.05,
+          y: -16.74,
+          theta: 90.57,
+          label: "k",
+        }
+      ],
+      changes: [],
+    }
+  },
+  mounted(){
+    var self = this;
+    setTimeout(function(){
+    self.options = {
+      zone: document.getElementById('joystick_zone'),
+      mode: 'static',
+      position: {left: '50%', top: '50%'},
+      color: 'red'
+    } 
+
+    self.manager = nipplejs.create(self.options);
+
+    self.manager.on('dir', function(evt, data){
+      console.log(data)
+    });
+  }, 1000)
+  },
+  unmounted() {
+    delete this.options;
+    delete this.manager;
+  }
+}
+</script>
 
 <style>
 #nipple_0_0 {
   position: relative !important;
   top: 75px !important;
 }
-
 
 </style>

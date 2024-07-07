@@ -1562,6 +1562,11 @@ convert-source-map@^1.7.0:
   resolved "https://registry.npmjs.org/convert-source-map/-/convert-source-map-1.9.0.tgz"
   integrity sha512-ASFBup0Mz1uyiIjANan1jzLQami9z1PoYSZCiiYW2FczPbenXc45FZdBZLzOT+r6+iciuEModtmCti+hjaAk0A==
 
+core-js@^3.6.5:
+  version "3.37.1"
+  resolved "https://registry.npmjs.org/core-js/-/core-js-3.37.1.tgz"
+  integrity sha512-Xn6qmxrQZyB0FFY8E3bgRXei3lWDJHhvI+u0q9TKIYM49G8pAr0FgnnrFRAmsbptZL1yxRADVXn+x5AGsbBfyw==
+
 cosmiconfig@^7.1.0:
   version "7.1.0"
   resolved "https://registry.npmjs.org/cosmiconfig/-/cosmiconfig-7.1.0.tgz"
@@ -5294,6 +5299,14 @@ vue3-perfect-scrollbar@^1.6.0:
     cssnano "^5.1.14"
     perfect-scrollbar "^1.5.5"
     postcss-import "^12.0.0"
+
+vue3-scheduler-lite@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.npmjs.org/vue3-scheduler-lite/-/vue3-scheduler-lite-1.0.0.tgz"
+  integrity sha512-LxHKKof38VaFG7JMz3M64H4QJLup0yVMwOA0CcjdwLfu71ctJWJyqUvjgMtr1Vr2LrPmWsibTj767iTiUiPgUA==
+  dependencies:
+    core-js "^3.6.5"
+    vue "^3.0.0"
 
 vuetify@^3.0.0-beta.4, vuetify@3.6.9:
   version "3.6.9"

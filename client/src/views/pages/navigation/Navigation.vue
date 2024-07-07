@@ -60,18 +60,47 @@ const defined_poses_headers = [
   </VRow>
   <VRow>
     <VCol>
-      <v-btn class="mx-1">Add Point</v-btn>
+      <v-btn
+        class="mx-1"
+        @click="startDrawing"
+        :disabled="startAddPoint"
+      >
+        Add Point
+      </v-btn>
       <v-btn class="mx-1">Edit Point</v-btn>
       <v-btn class="mx-1" @click="add_plan_dialog = true">Add Plan</v-btn>
       <v-btn class="mx-1">Localize</v-btn>
+      
       <v-btn class="mx-1" color="grey-800" variant="outlined" @click="camera_feed = !camera_feed">
         <v-icon>mdi-camera</v-icon>
       </v-btn>
     </VCol>
   </VRow>
-  <VRow class="position-relative">
+  <VRow >
     <VCol sm="12" md="9">
-      <v-img cover :src="map">
+      
+      <v-img
+        ref="imageRef"
+        :src="map"
+        @click="handleImageClick"
+        class="position-relative"
+      ><v-overlay
+          v-model="showOverlay"
+          @click = "handleOverlayClick"
+          class="align-center justify-center"
+          contained
+        >
+        <v-icon
+                v-if="showArrow"
+                :x="arrowStartX"
+                :y="arrowStartY"
+                size="48"
+                color="red"
+                class="position-absolute"
+              >
+                mdi-arrow-up
+              </v-icon>
+        </v-overlay>
       </v-img>
     </VCol>
     <VCol v-if="camera_feed" sm="12" md="7" class="position-absolute">
@@ -88,20 +117,21 @@ const defined_poses_headers = [
   </VRow>
   <v-row class="bottom-div">
     <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table"
-        :headers="map_headers" :items="map_points">
-        <template v-slot:item="{ item, index }">
-          <tr>
-            <td>{{ item.x }}</td>
-            <td>{{ item.y }}</td>
-            <td>{{ item.theta }}</td>
-            <td>{{ item.label }}</td>
-            <td>
-              <v-btn class="mx-1" color="success"><v-icon size="large">mdi-forward</v-icon></v-btn>
-              <v-btn class="mx-1" color="error" @click="deletePoint(index)"><v-icon size="large">mdi-delete</v-icon></v-btn>
-            </td>
-          </tr>
-        </template>
-      </v-data-table>
+      :headers="map_headers" :items="map_points">
+      <template v-slot:item="{ item, index }">
+        <tr>
+          <td>{{ item.x }}</td>
+          <td>{{ item.y }}</td>
+          <td>{{ item.theta }}</td>
+          <td>{{ item.label }}</td>
+          <td>
+            <v-btn class="mx-1" color="success"><v-icon size="large">mdi-forward</v-icon></v-btn>
+            <v-btn class="mx-1" color="error" @click="deletePoint(index)"><v-icon
+                size="large">mdi-delete</v-icon></v-btn>
+          </td>
+        </tr>
+      </template>
+    </v-data-table>
 
     <!--v-table fixed-header class="bottom-table">
       <thead>
@@ -141,7 +171,7 @@ const defined_poses_headers = [
           <v-expansion-panels v-model="panel" multiple>
             <v-expansion-panel>
               <v-expansion-panel-title expand-icon="mdi-menu-down">
-                <h3>Route Plan</h3>                
+                <h3>Route Plan</h3>
               </v-expansion-panel-title>
               <v-expansion-panel-text>
                 <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table"
@@ -158,8 +188,7 @@ const defined_poses_headers = [
                           class="mx-1">
                           <v-icon size="large">mdi-arrow-down</v-icon>
                         </v-btn>
-                        <v-btn  @click="removePlanPoint(index)" color="error"
-                          class="mx-1">
+                        <v-btn @click="removePlanPoint(index)" color="error" class="mx-1">
                           <v-icon size="large">mdi-delete</v-icon>
                         </v-btn>
                       </td>
@@ -181,7 +210,7 @@ const defined_poses_headers = [
                       <td>[{{ item.x }},{{ item.y }},{{ item.theta }}]</td>
                       <td>{{ item.label }}</td>
                       <td>
-                        <v-btn @click="addToPlan(item)"  color="success">
+                        <v-btn @click="addToPlan(item)" color="success">
                           <v-icon size="large">mdi-plus</v-icon>
                         </v-btn>
                       </td>
@@ -199,12 +228,12 @@ const defined_poses_headers = [
                 <v-radio-group v-model="sequence_mode">
                   <v-radio label="Single Run" value="1"></v-radio>
                   <v-radio label="Loop Run" value="2"></v-radio>
-                  <v-radio label="Back and Forth" value="3" ></v-radio>
+                  <v-radio label="Back and Forth" value="3"></v-radio>
                 </v-radio-group>
               </v-expansion-panel-text>
             </v-expansion-panel>
           </v-expansion-panels>
-          
+
         </v-card-text>
 
         <v-divider class="mt-2"></v-divider>
@@ -218,6 +247,85 @@ const defined_poses_headers = [
       </v-card>
     </template>
   </v-dialog>
+  <v-dialog v-model="confirmAddPointDialog" max-width="500">
+      <v-card rounded="lg">
+        <v-card-title class="d-flex justify-space-between align-center">
+          <div class="text-h5  ps-2">
+            Confirm Add Point
+          </div>
+          <v-btn icon="mdi-close" variant="text" @click="closeConfirmAddPoint()">
+          </v-btn>
+        </v-card-title>
+        <v-divider class="mb-4"></v-divider>
+        <v-card-text>
+          <v-table>
+            <tr>
+              <th class="text-left">
+                X[m]
+              </th>
+              <td>
+                {{ addPointFinal.x }}
+              </td>
+            </tr>
+            <tr>
+              <th class="text-left">
+                Y[m]
+              </th>
+              <td>
+                {{ addPointFinal.y }}
+              </td>
+            </tr>
+            <tr>
+              <th class="text-left">
+                Theta[°]
+              </th>
+              <td>
+                {{ addPointFinal.theta }}
+              </td>
+            </tr>
+            <tr>
+              <th class="text-left">
+                Label
+              </th>
+              <td>
+                <v-text-field 
+                  variant="outlined"
+                  density="compact"
+                  v-model="addPointFinal.label"
+                  hide-details
+                >
+                </v-text-field>
+              </td>
+            </tr>
+          </v-table>
+        </v-card-text>
+
+        <v-divider class="mt-2"></v-divider>
+
+        <v-card-actions class="my-2 d-flex justify-end">
+          <v-btn class="text-none" rounded="xl" text="Discard" @click="closeConfirmAddPoint()"></v-btn>
+
+          <v-btn class="text-none" color="primary" rounded="xl" text="Confirm" variant="flat"
+            @click="confirmAddPoint"></v-btn>
+        </v-card-actions>
+      </v-card>
+  </v-dialog>
+  <v-snackbar
+      v-model="snackbar.open"
+      color="primary"
+  >
+    <p>{{ snackbar.message }}</p>
+
+    <template v-slot:actions>
+      <v-btn
+        variant="text"
+        color="white"
+        @click="snackbar.open = false"
+      >
+        Close
+      </v-btn>
+    </template>
+  </v-snackbar>
 </template>
 
 
@@ -251,7 +359,36 @@ const defined_poses_headers = [
 export default {
   data() {
     return {
-      panel: [0,1,2],
+      snackbar: {
+        open: false,
+        message: "",
+      },
+      confirmAddPointDialog: false,
+      startAddPoint: false,
+      showOverlay: false,
+      showArrow: false,
+      selectStartPoint: false,
+      selectEndPoint: false,
+      addPointFinal: {
+        x: null,
+        y: null,
+        theta: null,
+        label: "",
+      },
+      startPoint: {
+        x: null,
+        y: null,
+      },
+      endPoint: {
+        x: null,
+        y: null,
+      },
+      theta: null,
+      arrowStartX: 0,
+      arrowStartY: 0,
+      arrowEndX: 0,
+      arrowEndY: 0,
+      panel: [0, 1, 2],
       sequence_mode: "1",
       added_to_plan: [],
       data: [
@@ -338,8 +475,69 @@ export default {
     }
   },
   methods: {
-    foo(){
-      console.log(this.panel)
+    startDrawing() {
+      this.startAddPoint = true;
+      this.snackbar.message = "You are Adding Point ...";
+      this.snackbar.open = true;
+    },
+    handleImageClick(event) {
+      if(this.startAddPoint){
+        if(this.selectStartPoint == false){
+          this.startPoint.x = event.offsetX;
+          this.startPoint.y = event.offsetY;
+          this.selectStartPoint = true;
+          this.showOverlay = true;
+        }        
+      }
+    },
+    handleOverlayClick(event) {
+      if(this.startAddPoint && this.selectStartPoint && this.selectEndPoint == false){
+        this.endPoint.x = event.offsetX;
+        this.endPoint.y = event.offsetY;
+        this.addPointFinal.x = this.startPoint.x;
+        this.addPointFinal.y = this.startPoint.y;
+        this.showOverlay = false;
+        this.startAddPoint = false;
+        this.selectEndPoint = false;
+        this.selectStartPoint = false;
+        let deltaY = this.endPoint.y - this.startPoint.y;
+        let deltaX = this.endPoint.x - this.startPoint.x;
+        this.theta = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+        if(this.theta!=0 && this.theta!=180) {
+          this.theta*=-1;
+        }
+        this.addPointFinal.theta = this.theta;
+        this.openConfirmAddPoint();
+      }
+    },
+    openConfirmAddPoint (){
+      var self = this;
+      self.confirmAddPointDialog = true;
+    },
+    closeConfirmAddPoint(){
+      var self = this;
+      self.confirmAddPointDialog = false;
+      self.addPointFinal.x = null;
+      self.addPointFinal.y = null;
+      self.addPointFinal.theta = null;
+      self.addPointFinal.label = "";
+    },
+    confirmAddPoint(){
+      var self = this;console.log(self.addPointFinal);
+      self.map_points.push({
+        x: self.addPointFinal.x,
+        y: self.addPointFinal.y,
+        theta: self.addPointFinal.theta,
+        label: self.addPointFinal.label
+      });
+      self.snackbar.open = true;
+      self.snackbar.message = "New point is added.";
+      self.confirmAddPointDialog = false;
+      self.addPointFinal.x = null;
+      self.addPointFinal.y = null;
+      self.addPointFinal.theta = null;
+      self.addPointFinal.label = "";
+      self.confirmAddPointDialog = false;
     },
     addToPlanRoutes(item) {
       console.log(item);
@@ -353,7 +551,7 @@ export default {
       // Swap the current row with the row below it
       [this.added_to_plan[index], this.added_to_plan[index + 1]] = [this.added_to_plan[index + 1], this.added_to_plan[index]];
       this.storeChanges(); // Store the entire data sequence
-    },    
+    },
     storeChanges() {
       // Store the entire data array in the changes array
       this.changes = [...this.added_to_plan];
@@ -364,13 +562,13 @@ export default {
       this.added_to_plan.push(item);
       console.log(this.added_to_plan);
     },
-    removePlanPoint(index){
-      this.added_to_plan.splice(index,1);
-      
+    removePlanPoint(index) {
+      this.added_to_plan.splice(index, 1);
+
       console.log(this.added_to_plan);
     },
-    deletePoint(index){
-      this.map_points.splice(index,1);
+    deletePoint(index) {
+      this.map_points.splice(index, 1);
     },
   },
 }

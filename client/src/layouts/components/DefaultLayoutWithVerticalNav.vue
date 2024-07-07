@@ -90,7 +90,7 @@ const upgradeBanner = computed(() => {
         :item="{
           title: 'Timetable',
           icon: 'mdi-timetable',
-          to: '/account-settings',
+          to: '/timetable',
         }"
       />
 

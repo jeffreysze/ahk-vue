@@ -25,8 +25,8 @@ const router = createRouter({
           component: () => import('../pages/chatbot.vue'),
         },
         {
-          path: 'icons',
-          component: () => import('../pages/icons.vue'),
+          path: 'timetable',
+          component: () => import('../pages/timetable.vue'),
         },
         {
           path: 'cards',
