@@ -37,7 +37,7 @@
         <v-responsive v-if="activeChat" class="overflow-y-hidden fill-height" height="500">
           <v-card flat class="d-flex flex-column fill-height">
             <v-card-title>
-              john doe
+              AI Chatbot
             </v-card-title>
             <v-card-text class="flex-grow-1 overflow-y-auto">
               <template v-for="(msg, i) in messages">
@@ -65,7 +65,7 @@
               </template>
             </v-card-text>
             <v-card-text class="flex-shrink-1">
-              <v-text-field v-model="messageForm.content" label="type_a_message" type="text" no-details outlined
+              <v-text-field v-model="messageForm.content" label="type a message" type="text" no-details outlined
                 append-outer-icon="send" @keyup.enter="messages.push(messageForm)"
                 @click:append-outer="messages.push(messageForm)" hide-details />
             </v-card-text>
@@ -149,45 +149,49 @@ export default {
       ],
       messages: [
         {
-          content: "lorem ipsum",
+          content: "Hello, is there a security robot available?",
           me: true,
           created_at: "11:11am"
         },
         {
-          content: "dolor",
+          content: "Yes, I'm here to assist you. How can I help you with security?",
           me: false,
           created_at: "11:11am"
         },
         {
-          content: "dolor",
-          me: false,
-          created_at: "11:11am"
-        },
-        {
-          content: "dolor",
-          me: false,
-          created_at: "11:11am"
-        },
-        {
-          content: "dolor",
+          content: "I'm concerned about the security of my home. What measures can I take to enhance it?",
           me: true,
           created_at: "11:11am"
         },
         {
-          content: "dolor",
+          content: "Here are some general security tips for your home:",
+          me: false,
+          created_at: "11:11am"
+        },
+        {
+          content: "Here are some general security tips for your home: \
+                    1. Install a reliable security system with cameras and sensors. \
+                    2. Ensure all doors and windows are properly locked, including using deadbolts. \
+                    3. Consider reinforcing entry points with stronger materials, such as solid doors and shatter-resistant glass. \
+                    4. Use outdoor lighting and motion sensors to deter potential intruders.",
+          me: false,
+          created_at: "11:11am"
+        },
+        {
+          content: "Thank you for the tips! I'll make sure to implement them to improve the security of my home.",
+          me: true,
+          created_at: "11:11am"
+        },
+        {
+          content: "You're welcome! I'm glad I could help. If you have any more questions or need further assistance, feel free to ask. Stay safe!",
           me: false,
           created_at: "11:12am"
         },
-        {
-          content: "dolor",
-          me: false,
-          created_at: "11:14am"
-        }
       ],
       messageForm: {
         content: "",
         me: true,
-        created_at: "11:11am"
+        created_at: "11:13am"
       }
     }
   },

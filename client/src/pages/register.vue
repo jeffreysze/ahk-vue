@@ -19,24 +19,14 @@ const isPasswordVisible = ref(false)
       max-width="448"
     >
       <VCardItem class="justify-center">
-        <template #prepend>
-          <div class="d-flex">
-            <div
-              class="d-flex text-primary"
-              v-html="logo"
-            />
-          </div>
-        </template>
+        
 
         <VCardTitle class="text-2xl font-weight-bold">
-          sneat
+          <h3 style='color: blue;'><i>KYOEI&nbsp;</i></h3>
         </VCardTitle>
       </VCardItem>
 
       <VCardText class="pt-2">
-        <h5 class="text-h5 mb-1">
-          Adventure starts here 🚀
-        </h5>
         <p class="mb-0">
           Make your app management easy and fun!
         </p>
