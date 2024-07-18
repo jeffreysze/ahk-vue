@@ -1,61 +1,24 @@
 <script setup>
-import avatar1 from '@images/avatars/avatar-1.png'
-import map from '@images/map/map.jpg'
-import nipplejs from 'nipplejs'
-import { onMounted } from 'vue';
-
-onMounted(() => {
-  setTimeout(function () {
-    var options = {
-      zone: document.getElementById('joystick_zone'),
-      mode: 'static',
-      position: { left: '50%', top: '50%' },
-      color: 'red'
-    }
-
-    var manager = nipplejs.create(options);
-
-    manager.on('dir', function (evt, data) {
-      console.log(data)
-    });
-  }, 1000)
-})
-
-const maps = ["Map 1", "Map 2", "Map 3", "Map 4"];
-const map_select = ref(maps[0]);
-const camera_feed = ref(false);
-const add_plan_dialog = ref(false);
-const map_headers = [
-  { title: 'X[m]', key: 'x' },
-  { title: 'Y[m]', key: 'y' },
-  { title: 'Theta[°]', key: 'theta' },
-  { title: 'Label', key: 'label' },
-  { title: 'Actions', key: 'actions' },
-];
-const add_plan_headers = [
-  { title: 'Pose[x,y,theta]', key: 'pose' },
-  { title: 'Label', key: 'label' },
-  { title: 'Edit', key: 'actions' },
-];
-const defined_poses_headers = [
-  { title: 'Pose[x,y,theta]', key: 'pose' },
-  { title: 'Label', key: 'label' },
-  { title: 'Add to Route', key: 'actions' },
-];
-
 </script>
 
 <template>
-
   <v-row>
     <v-col cols="12">
-      <v-select label="Select Map:" :items="maps" variant="solo" v-model="map_select">
+      <v-select 
+        label="Select Map:" 
+        :items="maps" 
+        variant="solo" 
+        item-title="label" 
+        item-value="id" 
+        v-model="map_select" 
+        @update:modelValue="onMapSelectChange"
+      >
       </v-select>
     </v-col>
   </v-row>
   <VRow>
     <VCol sm="12" md="9">
-      <h2>{{ map_select }}</h2>
+      <h2>{{ map_label }}</h2>
     </VCol>
   </VRow>
   <VRow>
@@ -63,56 +26,76 @@ const defined_poses_headers = [
       <v-btn
         class="mx-1"
         @click="startDrawing"
-        :disabled="startAddPoint"
+        :disabled="startAddPoint || connected==false"
       >
         Add Point
       </v-btn>
-      <v-btn class="mx-1">Edit Point</v-btn>
-      <v-btn class="mx-1" @click="add_plan_dialog = true">Add Plan</v-btn>
-      <v-btn class="mx-1">Localize</v-btn>
+      <v-btn class="mx-1" :disabled="startAddPoint || connected==false">Edit Point</v-btn>
+      <v-btn class="mx-1" @click="add_plan_dialog = true" :disabled="startAddPoint || connected==false">Add Plan</v-btn>
+      <v-btn class="mx-1" :disabled="startAddPoint || connected==false">Localize</v-btn>
       
-      <v-btn class="mx-1" color="grey-800" variant="outlined" @click="camera_feed = !camera_feed">
+      <v-btn class="mx-1" color="grey-800" variant="outlined" @click="changeCameraFeedStatus">
         <v-icon>mdi-camera</v-icon>
       </v-btn>
+
+      <v-btn v-if="connected" color="error" variant="flat" :disabled="loading" @click="disconnect">DISConnect!</v-btn>
+            <v-btn v-else color="success" variant="flat" :disabled="loading" @click="connect">Connect!</v-btn>
     </VCol>
   </VRow>
-  <VRow >
-    <VCol sm="12" md="9">
-      
-      <v-img
-        ref="imageRef"
-        :src="map"
-        @click="handleImageClick"
-        class="position-relative"
-      ><v-overlay
-          v-model="showOverlay"
-          @click = "handleOverlayClick"
-          class="align-center justify-center"
-          contained
-        >
-        <v-icon
-                v-if="showArrow"
-                :x="arrowStartX"
-                :y="arrowStartY"
-                size="48"
-                color="red"
-                class="position-absolute"
-              >
-                mdi-arrow-up
-              </v-icon>
-        </v-overlay>
-      </v-img>
-    </VCol>
-    <VCol v-if="camera_feed" sm="12" md="7" class="position-absolute">
+  <VRow style="margin-bottom:200px">
+    <v-col sm="12" md="9">
+      <v-card>
+        <v-card-title>
+          <h4>Robot Model</h4>
+        </v-card-title>
+        <v-card-text>
+          <div class="text-center">
+            <div id="visualization-canvas"></div>
+          </div>
+        </v-card-text>
+      </v-card>
+    </v-col>
+    <v-col v-if="camera_feed" sm="12" md="4" class="position-absolute">
       <v-responsive :aspect-ratio="16 / 9" class="border-lg border-primary bg-white h-100 w-100">
         <v-sheet class="bg-white h-100 w-100 text-align: center">
-          <h2>Camera Feed</h2>
+          <v-card height="100%">
+            <v-card-title>
+              <h4>Camera</h4>
+            </v-card-title>
+            <v-card-text>
+              <div class="text-center">
+                <div id="divCamera"></div>
+              </div>
+            </v-card-text>
+          </v-card>
         </v-sheet>
       </v-responsive>
-    </VCol>
-    <VCol sm="12" md="3" style="background-color:#dadbf1; min-height: 175px">
-      <div id="joystick_zone"></div>
-    </VCol>
+    </v-col>
+    <v-col sm="12" md="3" style="background-color:#dadbf1; min-height: 175px">
+      <v-card class="text-center">
+        <v-card-title>
+          <h4>Joystick</h4>
+        </v-card-title>
+        <v-card-text>
+          <hr>
+          <br>
+          <div id="dragstartzone" @mousedown="startDrag" @mousemove="doDrag" @mouseup="stopDrag">
+          </div>
+          <div id="dragCircle" :style="dragCircleStyle"></div>
+          <p>X: {{ joystick.vertical.toFixed(3) }}</p>
+          <p>Y: {{ joystick.horizontal.toFixed(3) }}</p>
+        </v-card-text>
+      </v-card>
+      <br>
+      <v-card>
+        <v-card-title class="text-center">
+          <h4>Logs</h4>
+        </v-card-title>
+        <v-card-text>
+          <p v-for="log in logs">{{ log }}</p>
+        </v-card-text>
+      </v-card>
+    </v-col>
 
   </VRow>
   <v-row class="bottom-div">
@@ -132,27 +115,6 @@ const defined_poses_headers = [
         </tr>
       </template>
     </v-data-table>
-
-    <!--v-table fixed-header class="bottom-table">
-      <thead>
-        <tr>
-          <th>X[m]</th>
-          <th>Y[m]</th>
-          <th>Theta[&#176;]</th>
-          <th>Label</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="item in map_points" :key="item.label">
-          <td>{{ item.x }}</td>
-          <td>{{ item.y }}</td>
-          <td>{{ item.theta }}</td>
-          <td>{{ item.label }}</td>
-          <td></td>
-        </tr>
-      </tbody>
-    </v-table-->
   </v-row>
   <v-dialog v-model="add_plan_dialog" max-width="700">
     <template v-slot:default="{ isActive }">
@@ -356,6 +318,7 @@ const defined_poses_headers = [
 }
 </style>
 <script>
+import { EventEmitter2, createjs, ROSLIB, ROS2D,MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
 export default {
   data() {
     return {
@@ -363,6 +326,31 @@ export default {
         open: false,
         message: "",
       },
+      maps: [
+        { label: "Map 1 (Public)", id: "map1", ros_address: 'ws://124.244.207.24:9090', camera_port: '9080'},
+        { label: "Map 2 (Local)", id: "map2", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080'},
+      ],
+      map_select: "map1",
+      map_label: "Map 1 (Public)",
+      camera_feed: false,
+      add_plan_dialog: false,
+      map_headers: [
+        { title: 'X[m]', key: 'x' },
+        { title: 'Y[m]', key: 'y' },
+        { title: 'Theta[°]', key: 'theta' },
+        { title: 'Label', key: 'label' },
+        { title: 'Actions', key: 'actions' },
+      ],
+      add_plan_headers: [
+        { title: 'Pose[x,y,theta]', key: 'pose' },
+        { title: 'Label', key: 'label' },
+        { title: 'Edit', key: 'actions' },
+      ],
+      defined_poses_headers: [
+        { title: 'Pose[x,y,theta]', key: 'pose' },
+        { title: 'Label', key: 'label' },
+        { title: 'Add to Route', key: 'actions' },
+      ],
       confirmAddPointDialog: false,
       startAddPoint: false,
       showOverlay: false,
@@ -472,42 +460,137 @@ export default {
         }
       ],
       changes: [],
+      connected: false,
+      ros: null,
+      logs: [],
+      loading: false,
+      //rosbridge_address: 'ws://192.168.1.14:9090',
+      rosbridge_address: 'ws://124.244.207.24:9090',
+      port: '9090',
+      camera_port: '9080',
+      dragging: false,
+      navigating: false,
+      x: 'no',
+      y: 'no',
+      dragCircleStyle: {
+        margin: '0px',
+        top: '0px',
+        left: '0px',
+        display: 'none',
+        width: '75px',
+        height: '75px',
+      },
+      // joystick valules
+      joystick: {
+        vertical: 0,
+        horizontal: 0,
+      },
+      goal: null,
+      action: {
+        goal: {
+          target_pose: {
+            header: {
+              seq: 0,
+              stamp: { secs: 0, nsecs: 0 },
+              frame_id: 'map'
+            },
+            pose: {
+              position: { x: 0, y: 0, z: 0 },
+              orientation: { x: 0, y: 0, z: 0, w: 0 }
+            }
+          }
+        },
+        feedback: {
+          base_position: {
+            header: { seq: 0, stamp: 0, frame_id: '/map' },
+            pose: {
+              position: { x: 0, y: 0, z: 0 },
+              orientation: { x: 0, y: 0, z: 0, w: 0 }
+            }
+          }
+        },
+        result: { success: false },
+        status: { status: 0, text: '' },
+      },
+      //publisher
+      pubInterval: null,
+      mapViewer: null,
+      mapGridClient: null,
+      interval: null,
     }
   },
+  mounted() {
+    this.interval = setInterval(() => {     // to keep the connection alive
+      if (this.ros != null && this.ros.inConnected) {
+        this.ros.getNodes((data) => { }, (error) => { })
+      }
+    }, 10000);
+  },
   methods: {
+    changeCameraFeedStatus(){
+      var self = this;
+      if(self.camera_feed==false){
+        self.camera_feed = true;
+        if(self.connected==true){
+          setTimeout(function(){
+            self.setCamera();
+          },500);
+        }
+      }
+      else if(self.camera_feed==true){
+        self.camera_feed = false;
+        if(self.connected==true){
+          self.unsetCamera();
+        }
+      }
+    },
+    onMapSelectChange(v) {
+      var self = this;
+      let mapObject = self.maps.filter(map => map.id === v)[0];
+      self.map_label = mapObject.label;
+      if(self.connected){
+        self.ros.close()
+      }
+      self.rosbridge_address= mapObject.ros_address;
+      self.camera_port= mapObject.camera_port;
+    },
     startDrawing() {
       this.startAddPoint = true;
       this.snackbar.message = "You are Adding Point ...";
       this.snackbar.open = true;
+      this.unsetCamera();
+      this.camera_feed = false;
     },
-    handleImageClick(event) {
-      if(this.startAddPoint){
-        if(this.selectStartPoint == false){
-          this.startPoint.x = event.offsetX;
-          this.startPoint.y = event.offsetY;
-          this.selectStartPoint = true;
-          this.showOverlay = true;
-        }        
-      }
-    },
-    handleOverlayClick(event) {
-      if(this.startAddPoint && this.selectStartPoint && this.selectEndPoint == false){
-        this.endPoint.x = event.offsetX;
-        this.endPoint.y = event.offsetY;
-        this.addPointFinal.x = this.startPoint.x;
-        this.addPointFinal.y = this.startPoint.y;
-        this.showOverlay = false;
-        this.startAddPoint = false;
-        this.selectEndPoint = false;
-        this.selectStartPoint = false;
-        let deltaY = this.endPoint.y - this.startPoint.y;
-        let deltaX = this.endPoint.x - this.startPoint.x;
-        this.theta = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
-        if(this.theta!=0 && this.theta!=180) {
-          this.theta*=-1;
+    handleImageClick(x,y) {
+      var self = this;
+      if(self.startAddPoint){
+        if(self.selectStartPoint == false){
+          self.startPoint.x = x;
+          self.startPoint.y = y;
+          self.selectStartPoint = true;
+          self.showOverlay = true;
+          self.snackbar.open = false;
+          self.snackbar.message = "Point location is selected. Please select direction.";
+          self.snackbar.open = true;
         }
-        this.addPointFinal.theta = this.theta;
-        this.openConfirmAddPoint();
+        else if(self.selectEndPoint == false){
+          self.endPoint.x = x;
+          self.endPoint.y = y;
+          self.addPointFinal.x = self.startPoint.x.toFixed(2);
+          self.addPointFinal.y = self.startPoint.y.toFixed(2);
+          self.showOverlay = false;
+          self.startAddPoint = false;
+          self.selectEndPoint = false;
+          self.selectStartPoint = false;
+          let deltaY = self.endPoint.y - self.startPoint.y;
+          let deltaX = self.endPoint.x - self.startPoint.x;
+          self.theta = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+          if(self.theta!=0 && self.theta!=180) {
+            self.theta*=-1;
+          }
+          self.addPointFinal.theta = self.theta.toFixed(2);
+          self.openConfirmAddPoint();
+          }
       }
     },
     openConfirmAddPoint (){
@@ -570,6 +653,300 @@ export default {
     deletePoint(index) {
       this.map_points.splice(index, 1);
     },
+    connect: function () {
+      this.loading = true
+      this.ros = new ROSLIB.Ros({
+        url: this.rosbridge_address
+      })
+      this.ros.on('connection', () => {
+        this.logs.unshift((new Date()).toTimeString() + ' - Connected!')
+        this.connected = true
+        console.log('Connection to ROSBridge established!')
+        if(this.camera_feed) this.setCamera()
+        this.loading = false
+        this.pubInterval = setInterval(this.publish, 100);
+        this.setup3DViewer()
+      })
+      this.ros.on('error', (error) => {
+        console.log('Something went wrong when trying to connect')
+        this.logs.unshift((new Date()).toTimeString() + ` - Error: ${error}`)
+      })
+      this.ros.on('close', () => {
+        this.logs.unshift((new Date()).toTimeString() + ' - Disconnected!')
+        this.connected = false
+        this.loading = false
+        console.log('Connection to ROSBridge was closed!')
+        if(this.camera_feed) this.unsetCamera()
+        this.unset3DViewer()
+        clearInterval(this.pubInterval)
+        this.camera_feed = false
+      })
+    },
+    publish: function () {
+      let topic = new ROSLIB.Topic({
+        ros: this.ros,
+        name: '/cmd_vel',
+        messageType: 'geometry_msgs/Twist'
+      })
+      let message = new ROSLIB.Message({
+        linear: { x: this.joystick.vertical, y: 0, z: 0, },
+        angular: { x: 0, y: 0, z: this.joystick.horizontal, },
+      })
+      if (!this.navigating) {
+        topic.publish(message)
+      }
+    },
+    disconnect: function () {
+      this.ros.close()
+    },
+    setCamera: function () {
+      let without_ws = this.rosbridge_address.split('ws://')[1]
+      console.log(without_ws)
+      let domain = without_ws.split('/')[0].split(':')[0] + ':' + this.camera_port
+      console.log(domain)
+      let host = domain // + '/cameras'
+      let viewer = new MJPEGCANVAS.Viewer({
+        divID: 'divCamera',
+        host: host,
+        width: 320,
+        height: 240,
+        topic: '/camera/color/image_raw',
+        ssl: false,
+      })
+    },
+    unsetCamera: function () {
+      document.getElementById('divCamera').innerHTML = ''
+    },
+    setup3DViewer: function () {
+      this.viewer = new ROS3D.Viewer({
+        background: '#cccccc',
+        divID: 'visualization-canvas',
+        width: 800,
+        height: 600,
+        antialias: true,
+      })
+      this.viewer.renderer.domElement.addEventListener('click', this.mouseClickHandler)
+      this.viewer.cameraControls.userRotateSpeed = 0
+      this.viewer.cameraControls.autoRotate = false
+      this.viewer.cameraControls.autoRotateSpeed = 0
+      this.viewer.camera.position.x = 0;
+      this.viewer.camera.position.y = 0;
+      this.viewer.camera.position.z = 20;
+      //            this.viewer.camera.position.set(tf.translation.x, tf.translation.y, 20)
+      this.viewer.camera.up = new THREE.Vector3(0, 0, -1)
+      this.viewer.camera.lookAt(0, 0, 0)
+
+      this.viewer.camera.updateProjectionMatrix()
+
+      this.viewer.cameraControls.update()
+      this.viewer.camera.updateMatrixWorld()
+      console.log(this.viewer.cameraControls)
+
+      this.tfClient = new ROSLIB.TFClient({
+        ros: this.ros,
+        fixedFrame: '/map',
+        angularThres: 0.01,
+        transThres: 0.01,
+        rate: 3.0
+      })
+
+      this.mapClient = new ROS3D.OccupancyGridClient({
+        ros: this.ros,
+        rootObject: this.viewer.scene,
+        topic: '/map',
+        tfClient: this.tfClient,
+        continuous: 'true'
+      })
+      this.tfClient.subscribe('/base_link', this.subsTF);
+
+      this.laserScanClient = new ROS3D.LaserScan({
+        ros: this.ros,
+        rootObject: this.viewer.scene,
+        topic: '/scan',
+        tfClient: this.tfClient,
+        material: { size: 0.2, color: 0x00FF00 }
+      })
+      // Add a grid.
+      this.viewer.addObject(new ROS3D.Grid({
+        color: '#0181c4',
+        cellSize: 1.0,
+        num_cells: 20,
+      }))
+
+      // Track robot pose with an arrow
+      this.arrowNode = new ROS3D.SceneNode({
+        tfClient: this.tfClient,
+        frameID: '/base_link',
+        object: new ROS3D.Arrow({
+          length: 1, shaftDiameter: 0.2, headDiameter: 0.5, headLength: 0.8,
+          material: new ROS3D.makeColorMaterial(1, 0, 0, 0.5)
+        }),
+      });
+
+      this.viewer.scene.add(this.arrowNode);
+
+
+      /*            // Setup the URDF client.
+                  this.urdfClient = new ROS3D.UrdfClient({
+                      ros: this.ros,
+                      param: 'robot_description',
+                      tfClient: this.tfClient,
+                      // We use "path: location.origin + location.pathname"
+                      // instead of "path: window.location.href" to remove query params,
+                      // otherwise the assets fail to load
+                      path: location.origin + location.pathname,
+                      rootObject: this.viewer.scene,
+                      loader: ROS3D.COLLADA_LOADER_2
+                  })
+      */
+    },
+    unset3DViewer: function () {
+      document.getElementById('visualization-canvas').innerHTML = ''
+    },
+    sendCommand: function () {
+      let topic = new ROSLIB.Topic({
+        ros: this.ros,
+        name: '/cmd_vel',
+        messageType: 'geometry_msgs/Twist'
+      })
+      let message = new ROSLIB.Message({
+        linear: { x: 1, y: 0, z: 0, },
+        angular: { x: 0, y: 0, z: 0.5, },
+      })
+      topic.publish(message)
+    },
+    startDrag() {
+      this.dragging = true
+      this.x = this.y = 0
+    },
+    stopDrag() {
+      this.dragging = false
+      this.x = this.y = 'no'
+      this.dragCircleStyle.display = 'none'
+      this.resetJoystickVals()
+    },
+    doDrag(event) {
+      if (this.dragging) {
+        this.x = event.offsetX
+        this.y = event.offsetY
+        let ref = document.getElementById('dragstartzone')
+        this.dragCircleStyle.display = 'inline-block'
+
+        let minTop = ref.offsetTop - parseInt(this.dragCircleStyle.height) / 2
+        let maxTop = minTop + 200
+        let top = this.y + minTop
+        this.dragCircleStyle.top = `${top}px`
+
+        let minLeft = ref.offsetLeft - parseInt(this.dragCircleStyle.width) / 2
+        let maxLeft = minLeft + 200
+        let left = this.x + minLeft
+        this.dragCircleStyle.left = `${left}px`
+
+        this.setJoystickVals()
+      }
+    },
+    subsTF(tf) {
+      // Update the camera position to match the base_link frame
+      this.viewer.scene.position.x = -tf.translation.x
+      this.viewer.scene.position.y = -tf.translation.y
+    },
+    mouseClickHandler(event) {
+      let rect = event.target.getBoundingClientRect()
+      let mouseX = -(event.clientX - rect.left - rect.width / 2)
+      let mouseY = -(event.clientY - rect.top - rect.height / 2)
+
+      let dpp = this.viewer.camera.position.z * Math.tan(Math.PI * (this.viewer.camera.fov / 2) / 180) / (rect.height / 2)
+      console.log(dpp)
+      console.log("X = " + dpp * mouseY + ", Y = " + dpp * mouseX)
+
+      let mx = dpp * mouseY + this.viewer.camera.position.x - this.viewer.scene.position.x
+      let my = dpp * mouseX + this.viewer.camera.position.y - this.viewer.scene.position.y
+      console.log("MX = " + mx + ", MY = " + my)
+      if(this.startAddPoint==true){
+        this.handleImageClick(mx, my);
+      }
+      //let vector = new THREE.Vector3((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1, 0.5)
+    },
+    setJoystickVals() {
+      this.joystick.vertical = -1 * ((this.y / 200) - 0.5)
+      this.joystick.horizontal = -1 * ((this.x / 200) - 0.5)
+    },
+    resetJoystickVals() {
+      this.joystick.vertical = 0
+      this.joystick.horizontal = 0
+    },
+    commandWaypoint: function (x, y, p, q, r, s) {
+      let actionClient = new ROSLIB.ActionClient({
+        ros: this.ros,
+        serverName: '/move_base',
+        actionName: 'move_base_msgs/MoveBaseAction'
+      })
+      let currentTime = new Date()
+      let secs = Math.floor(currentTime.getTime() / 1000);
+      let nsecs = Math.round(1000000000 * (currentTime.getTime() / 1000 - secs));
+      this.goal = new ROSLIB.Goal({
+        actionClient: actionClient,
+        goalMessage: {
+          target_pose: {
+            header: {
+              seq: 0,
+              stamp: { secs: secs, nsecs: nsecs },
+              frame_id: 'map'
+            },
+            pose: {
+              position: { x: x, y: y, z: 0 },
+              orientation: { x: p, y: q, z: r, w: s }
+            }
+          }
+        }
+      })
+
+      this.goal.on('status', (status) => {
+        this.action.status = status
+      })
+
+      this.goal.on('feedback', (feedback) => {
+        this.action.feedback = feedback
+      })
+
+      this.goal.on('result', (result) => {
+        this.action.result = result
+        this.navigating = false
+      })
+      this.navigating = true
+      this.goal.send()
+    },
   },
 }
 </script>
+
+<style type="text/css">
+    #dragstartzone {
+      text-align: center;
+      position: relative;
+      display: inline-block;
+      width: 200px;
+      height: 200px;
+      border: 1px solid #333;
+      border-radius: 50%;
+      z-index: 10;
+      -moz-user-select: -moz-none;
+      -khtml-user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #dragCircle {
+      position: absolute;
+      z-index: 9;
+      border: 1px solid transparent;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 30%);
+      -moz-user-select: -moz-none;
+      -khtml-user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #dragCircle:hover {
+      background-color: lightcoral;
+    }
+  </style>

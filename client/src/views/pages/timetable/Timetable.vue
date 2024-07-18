@@ -1,88 +1,62 @@
-<script setup>
-
-
-</script>
-
-<template>
-  <v-container class="fill-height pa-0 ">
-    <vue3-scheduler-lite :schedule-data="data" :setting="settingData" />
-  </v-container>
-</template>
 <script>
-import VueSchedulerLite from 'vue3-scheduler-lite';
+import FullCalendar from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import interactionPlugin from '@fullcalendar/interaction'
+import timeGridPlugin from '@fullcalendar/timegrid'
 
 export default {
   components: {
-    VueSchedulerLite
+    FullCalendar // make the <FullCalendar> tag available
   },
   data() {
     return {
-      data: {
-  title: 'My Schedule',
-  noBusinessDate: ['2023-06-01', '2023-06-15'], // Dates that are not considered business days
-  businessHours: [
-    { start: '09:00', end: '17:00' }, // Business hours for Monday-Friday
-    { start: '10:00', end: '15:00' } // Business hours for Saturday
-  ],
-  schedules: [
-    {
-      start: '2023-06-02 10:00',
-      end: '2023-06-02 12:00',
-      text: 'Meeting with client'
-    },
-    {
-      start: '2023-06-05 14:00',
-      end: '2023-06-05 16:00',
-      text: 'Team discussion'
-    },
-    {
-      start: '2023-06-10 09:00',
-      end: '2023-06-10 11:00',
-      text: 'Presentation'
+      days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      calendarOptions: {},        
     }
-  ]
-},
-settingData: {
-  startDate: '2023-06-01',
-  endDate: '2023-06-30',
-  weekdayText: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-  unit: 30, // Cell width in minutes
-  borderW: 1, // Cell border width in pixels
-  dateDivH: 30, // Date cell height in pixels
-  timeDivH: 50, // Time cell height in pixels
-  unitDivW: 120, // Cell width in pixels
-  titleDivW: 20, // Title cell width in percentage
-  rowH: 80, // Row height in pixels
-  rowClickEvent: (rowData) => {
-    // Handle row click event
-    console.log('Row clicked:', rowData)
   },
-  dateClickEvent: (dateData) => {
-    // Handle date click event
-    console.log('Date clicked:', dateData)
+  mounted: function () {
+    this.calendarOptions = {
+      plugins: [ timeGridPlugin, dayGridPlugin, interactionPlugin ],
+        initialView: 'timeGridWeek',
+        dayHeaderFormat: function(date){
+          return this.days[date.getDay()];
+        },
+        events: [
+          {
+              "title": "Long Event",
+              "start": "2024-07-07",
+              "end": "2024-07-10"
+          },
+          {
+              "groupId": "999",
+              "title": "Repeating Event",
+              "start": "2024-07-09T16:00:00+00:00"
+          },
+          {
+              "title": "Conference",
+              "start": "2024-07-07",
+              "end": "2024-07-09"
+          },
+          {
+              "title": "Meeting",
+              "start": "2024-07-08T10:30:00+00:00",
+              "end": "2024-07-08T12:30:00+00:00"
+          },
+          {
+              "title": "Lunch",
+              "start": "2024-07-08T12:00:00+00:00"
+          },
+          {
+              "title": "Birthday Party",
+              "start": "2024-07-09T07:00:00+00:00"
+          }
+        ],
+    }
   },
-  clickEvent: (scheduleData) => {
-    // Handle schedule bar click event
-    console.log('Schedule clicked:', scheduleData)
-  },
-  addEvent: (scheduleData) => {
-    // Handle new schedule add event
-    console.log('New schedule added:', scheduleData)
-  },
-  moveEvent: (scheduleData) => {
-    // Handle schedule move event
-    console.log('Schedule moved:', scheduleData)
-  },
-  editEvent: (scheduleData) => {
-    // Handle schedule edit event
-    console.log('Schedule edited:', scheduleData)
-  },
-  deleteEvent: (scheduleData) => {
-    // Handle schedule delete event
-    console.log('Schedule deleted:', scheduleData)
+  methods: {
   }
 }
-    }
-  },
-}
 </script>
+<template>
+  <FullCalendar :options="calendarOptions" />
+</template>
