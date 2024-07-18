@@ -1,0 +1,233 @@
+<html>
+
+<head>
+  <title>AGV Controller</title>
+  <link rel="icon" href="img/favicon.ico">
+  <!-- Bootstrap -->
+  <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous"> -->
+  <link rel="stylesheet" href="./libs/public/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+  <!-- ROS stuff -->
+  <script type="text/javascript" src="./libs/public/eventemitter2.min.js"></script>
+  <script type="text/javascript" src="./libs/public/roslib.min.js"></script>
+  <script type="text/javascript" src="./libs/public/easeljs.min.js"></script>
+  <script type="text/javascript" src="./libs/public/ros2d.min.js"></script>
+  <script type="text/javascript" src="mjpegcanvas.min.js"></script>
+  <!-- <script src="http://static.robotwebtools.org/threejs/current/three.min.js"></script> -->
+  <script src="./libs/three.min.js"></script>
+  <!-- <script src="http://static.robotwebtools.org/threejs/current/ColladaLoader.min.js"></script> -->
+  <script src="./libs/ColladaLoader.js"></script>
+  <!-- <script src="http://static.robotwebtools.org/ColladaAnimationCompress/current/ColladaLoader2.min.js"></script> -->
+  <script src="./libs/ColladaLoader2.js"></script>
+  <!-- <script src="http://static.robotwebtools.org/threejs/current/STLLoader.min.js"></script> -->
+  <script src="./libs/STLLoader.js"></script>
+  <!-- <script src="http://static.robotwebtools.org/ros3djs/current/ros3d.min.js"></script> -->
+  <script src="./libs/ros3d.min.js"></script>
+
+  <!-- Vuejs -->
+  <script src="./libs/public/vue.min.js"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script> -->
+  <style type="text/css">
+    #dragstartzone {
+      position: relative;
+      display: inline-block;
+      width: 200px;
+      height: 200px;
+      border: 1px solid #333;
+      border-radius: 50%;
+      z-index: 10;
+      -moz-user-select: -moz-none;
+      -khtml-user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #dragCircle {
+      position: absolute;
+      z-index: 9;
+      border: 1px solid transparent;
+      border-radius: 50%;
+      background-color: rgba(0, 0, 0, 30%);
+      -moz-user-select: -moz-none;
+      -khtml-user-select: none;
+      -webkit-user-select: none;
+    }
+
+    #dragCircle:hover {
+      background-color: lightcoral;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" class="container-fluid">
+    <div class="row">
+      <div class="col-3 text-center">
+        <div class="card mt-2">
+          <div class="card-body">
+            <h3>Connection status</h3>
+            <p class="text-danger" v-if="!connected">Not connected!</p>
+            <p class="text-success" v-if="connected">Connected!</p>
+            <label>ROSBridge address</label>
+            <br>
+            <input type="text" v-model="rosbridge_address" />
+            <br><br>
+            <button :disabled="loading" class="btn btn-danger" @click="disconnect" v-if="connected">Disconnect!</button>
+            <button :disabled="loading" class="btn btn-success" @click="connect" v-else>Connect!</button>
+          </div>
+        </div>
+        <div class="card mt-2">
+          <div class="card-header">
+            <h4>Logs</h5>
+          </div>
+          <div class="card-body">
+            <p v-for="log in logs">{{ log }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-9">
+        <h3>Controls</h3>
+        <div class="row">
+          <div class="col-12">
+            <div class="card mt-2">
+              <div class="card-header">
+                <h4>Robot model</h4>
+              </div>
+              <div class="card-body">
+                <div class="col-md-12 text-center my-2">
+                  <div id="visualization-canvas"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-4">
+            <div class="card mt-2">
+              <div class="card-header">
+                <h4>Camera</h4>
+              </div>
+              <div class="card-body">
+                <div class="col-md-12 col-sm-6 text-center">
+                  <div id="divCamera"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-8">
+            <div class="card mt-2">
+              <div class="card-header">
+                <h4>Commands</h4>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-12">
+                    <div class="card">
+                      <div class="card-body text-center">
+                        <h2 class="text-center">Joystick</h2>
+                        <hr>
+                        <p>Some actions for the robot</p>
+                        <div id="dragstartzone" @mousedown="startDrag" @mousemove="doDrag" @mouseup="stopDrag">
+                        </div>
+                        <div id="dragCircle" :style="dragCircleStyle"></div>
+                        <p>X: {{ joystick.vertical.toFixed(3) }}</p>
+                        <p>Y: {{ joystick.horizontal.toFixed(3) }}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-12">
+                    <div class="card mt-2">
+                      <div class="card-header">
+                        <h4>Waypoint</h4>
+                      </div>
+                      <div class="card-body">
+                        <div class="row mt-4">
+                          <div class="col-3 offset-2 text-center">
+                            <button class="btn btn-primary"
+                              @click.prevent="commandWaypoint(9.0703, -0.5512, 0.0, 0.0, 0.707, -0.707)">PT1</button>
+                          </div>
+                          <div class="col-3 offset-2 text-center">
+                            <button class="btn btn-primary"
+                              @click.prevent="commandWaypoint(10.4274, -24.0194, 0.0, 0.0, 0.707, -0.707)">PT2</button>
+                          </div>
+                        </div>
+                        <div class="row mt-4">
+                          <div class="col-3 offset-2 text-center">
+                            <button class="btn btn-primary"
+                              @click.prevent="commandWaypoint(10.2837, -44.2904, 0.0, 0.0, 0.707, -0.707)">PT3</button>
+                          </div>
+                          <div class="col-3 offset-2 text-center">
+                            <button class="btn btn-primary"
+                              @click.prevent="commandWaypoint(9.9224, -56.8391, 0.0, 0.0, 1.0, 0.0)">PT4</button>
+                          </div>
+                        </div>
+                        <div class="row mt-4">
+                          <div class="col-3 offset-2 text-center">
+                            <button class="btn btn-primary"
+                              @click.prevent="commandWaypoint(-7.3634, -57.9038, 0.0, 0.0, 1.0, 0.0)">PT5</button>
+                          </div>
+                          <div class="col-3 offset-2 text-center">
+                            <button class="btn btn-primary"
+                              @click.prevent="commandWaypoint(-15.7325, -39.9050, 0.0, 0.0, 0.707, 0.707)">PT6</button>
+                          </div>
+                        </div>
+                        <div class="row mt-4">
+                          <div class="col-3 offset-2 text-center">
+                            <button class="btn btn-primary"
+                              @click.prevent="commandWaypoint(-16.0484, -9.2426, 0.0, 0.0, 0.0, 1.0)">PT7</button>
+                          </div>
+                          <div class="col-3 offset-2 text-center">
+                            <button class="btn btn-primary"
+                              @click.prevent="commandWaypoint(-10.0930, 17.9577, 0.0, 0.0, 0.0, 1.0)">PT8</button>
+                          </div>
+                        </div>
+                        <div class="row mt-4">
+                          <div class="col-3 offset-2 text-center">
+                            <button class="btn btn-primary"
+                              @click.prevent="commandWaypoint(7.8998, 17.7781, 0.0, 0.0, 0.0, 1.0)">PT9</button>
+                          </div>
+                          <div class="col-3 offset-2 text-center">
+                            <button class="btn btn-primary"
+                              @click.prevent="commandWaypoint(9.2512, 5.7526, 0.0, 0.0, 0.707, -0.707)">PT10</button>
+                          </div>
+                        </div>
+                        <div class="row mt-4">
+                          <div class="col-4 offset-4 text-center">
+                            <button class="btn btn-primary"
+                              @click.prevent="commandWaypoint(1.0, 0.05, 0.0, 0.0, 0.0, 1.0)">Home</button>
+                          </div>
+                        </div>
+                        <div>
+                          <p>Status: {{action.status.text}}</p>
+                          <p>Feedback: X: {{action.feedback.base_position.pose.position.x.toFixed(2)}} Y:
+                            {{action.feedback.base_position.pose.position.y.toFixed(2)}}</p>
+                          <p>Result: Success: {{action.result.success}}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    // We could have loaded main.js simply with:
+    //  <script type="text/javascript" src="main.js">
+    //
+    // BUT we were having caching-related problems.
+    // Loading main.js with a Date.now() in the URL we avoid using cache
+
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = 'main.js?v=11.' + Date.now();
+    document.head.appendChild(script);
+  </script>
+</body>
+
+</html>
