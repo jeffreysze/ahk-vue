@@ -16,12 +16,7 @@ import wallet from '@images/cards/wallet-info.png'
 <template>
   <VRow>
     <!-- 👉 Congratulations -->
-    <VCol
-      cols="12"
-      md="8"
-    >
-      <AnalyticsCongratulations />
-    </VCol>
+    
 
     <VCol
       cols="12"
