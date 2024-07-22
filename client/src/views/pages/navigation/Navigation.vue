@@ -1,18 +1,8 @@
-<script setup>
-</script>
-
 <template>
   <v-row>
     <v-col cols="12">
-      <v-select 
-        label="Select Map:" 
-        :items="maps" 
-        variant="solo" 
-        item-title="label" 
-        item-value="id" 
-        v-model="map_select" 
-        @update:modelValue="onMapSelectChange"
-      >
+      <v-select label="Select Map:" :items="maps" variant="solo" item-title="label" item-value="id" v-model="map_select"
+        @update:modelValue="onMapSelectChange">
       </v-select>
     </v-col>
   </v-row>
@@ -23,23 +13,19 @@
   </VRow>
   <VRow>
     <VCol>
-      <v-btn
-        class="mx-1"
-        @click="startDrawing"
-        :disabled="startAddPoint || connected==false"
-      >
+      <v-btn class="mx-1" @click="startDrawing" :disabled="startAddPoint || connected == false">
         Add Point
       </v-btn>
-      <v-btn class="mx-1" :disabled="startAddPoint || connected==false">Edit Point</v-btn>
-      <v-btn class="mx-1" @click="add_plan_dialog = true" :disabled="startAddPoint || connected==false">Add Plan</v-btn>
-      <v-btn class="mx-1" :disabled="startAddPoint || connected==false">Localize</v-btn>
-      
+      <v-btn class="mx-1" :disabled="startAddPoint || connected == false">Edit Point</v-btn>
+      <v-btn class="mx-1" @click="add_plan_dialog = true" :disabled="startAddPoint || connected == false">Add Plan</v-btn>
+      <v-btn class="mx-1" :disabled="startAddPoint || connected == false">Localize</v-btn>
+
       <v-btn class="mx-1" color="grey-800" variant="outlined" @click="changeCameraFeedStatus">
         <v-icon>mdi-camera</v-icon>
       </v-btn>
 
-      <v-btn v-if="connected" color="error" variant="flat" :disabled="loading" @click="disconnect">DISConnect!</v-btn>
-            <v-btn v-else color="success" variant="flat" :disabled="loading" @click="connect">Connect!</v-btn>
+      <v-btn v-if="connected" color="error" variant="flat" :disabled="loading" @click="stopNavigate();disconnect();">DisConnect!</v-btn>
+      <v-btn v-else color="success" variant="flat" :disabled="loading" @click="startNavigate();connect();">Connect!</v-btn>
     </VCol>
   </VRow>
   <VRow style="margin-bottom:200px">
@@ -107,10 +93,9 @@
           <td>{{ item.y }}</td>
           <td>{{ item.theta }}</td>
           <td>{{ item.label }}</td>
-          <td>
-            <v-btn class="mx-1" color="success"><v-icon size="large">mdi-forward</v-icon></v-btn>
-            <v-btn class="mx-1" color="error" @click="deletePoint(index)"><v-icon
-                size="large">mdi-delete</v-icon></v-btn>
+          <td>            
+            <v-btn class="mx-1" color="success" @click="commandWaypoint(item.x, item.y, item.theta)"><v-icon size="large">mdi-forward</v-icon></v-btn>
+            <v-btn class="mx-1" color="error" @click="deletePoint(index)"><v-icon size="large">mdi-delete</v-icon></v-btn>
           </td>
         </tr>
       </template>
@@ -210,80 +195,68 @@
     </template>
   </v-dialog>
   <v-dialog v-model="confirmAddPointDialog" max-width="500">
-      <v-card rounded="lg">
-        <v-card-title class="d-flex justify-space-between align-center">
-          <div class="text-h5  ps-2">
-            Confirm Add Point
-          </div>
-          <v-btn icon="mdi-close" variant="text" @click="closeConfirmAddPoint()">
-          </v-btn>
-        </v-card-title>
-        <v-divider class="mb-4"></v-divider>
-        <v-card-text>
-          <v-table>
-            <tr>
-              <th class="text-left">
-                X[m]
-              </th>
-              <td>
-                {{ addPointFinal.x }}
-              </td>
-            </tr>
-            <tr>
-              <th class="text-left">
-                Y[m]
-              </th>
-              <td>
-                {{ addPointFinal.y }}
-              </td>
-            </tr>
-            <tr>
-              <th class="text-left">
-                Theta[°]
-              </th>
-              <td>
-                {{ addPointFinal.theta }}
-              </td>
-            </tr>
-            <tr>
-              <th class="text-left">
-                Label
-              </th>
-              <td>
-                <v-text-field 
-                  variant="outlined"
-                  density="compact"
-                  v-model="addPointFinal.label"
-                  hide-details
-                >
-                </v-text-field>
-              </td>
-            </tr>
-          </v-table>
-        </v-card-text>
+    <v-card rounded="lg">
+      <v-card-title class="d-flex justify-space-between align-center">
+        <div class="text-h5  ps-2">
+          Confirm Add Point
+        </div>
+        <v-btn icon="mdi-close" variant="text" @click="closeConfirmAddPoint()">
+        </v-btn>
+      </v-card-title>
+      <v-divider class="mb-4"></v-divider>
+      <v-card-text>
+        <v-table>
+          <tr>
+            <th class="text-left">
+              X[m]
+            </th>
+            <td>
+              {{ addPointFinal.x }}
+            </td>
+          </tr>
+          <tr>
+            <th class="text-left">
+              Y[m]
+            </th>
+            <td>
+              {{ addPointFinal.y }}
+            </td>
+          </tr>
+          <tr>
+            <th class="text-left">
+              Theta[°]
+            </th>
+            <td>
+              {{ addPointFinal.theta }}
+            </td>
+          </tr>
+          <tr>
+            <th class="text-left">
+              Label
+            </th>
+            <td>
+              <v-text-field variant="outlined" density="compact" v-model="addPointFinal.label" hide-details>
+              </v-text-field>
+            </td>
+          </tr>
+        </v-table>
+      </v-card-text>
 
-        <v-divider class="mt-2"></v-divider>
+      <v-divider class="mt-2"></v-divider>
 
-        <v-card-actions class="my-2 d-flex justify-end">
-          <v-btn class="text-none" rounded="xl" text="Discard" @click="closeConfirmAddPoint()"></v-btn>
+      <v-card-actions class="my-2 d-flex justify-end">
+        <v-btn class="text-none" rounded="xl" text="Discard" @click="closeConfirmAddPoint()"></v-btn>
 
-          <v-btn class="text-none" color="primary" rounded="xl" text="Confirm" variant="flat"
-            @click="confirmAddPoint"></v-btn>
-        </v-card-actions>
-      </v-card>
+        <v-btn class="text-none" color="primary" rounded="xl" text="Confirm" variant="flat"
+          @click="confirmAddPoint"></v-btn>
+      </v-card-actions>
+    </v-card>
   </v-dialog>
-  <v-snackbar
-      v-model="snackbar.open"
-      color="primary"
-  >
+  <v-snackbar v-model="snackbar.open" color="primary">
     <p>{{ snackbar.message }}</p>
 
     <template v-slot:actions>
-      <v-btn
-        variant="text"
-        color="white"
-        @click="snackbar.open = false"
-      >
+      <v-btn variant="text" color="white" @click="snackbar.open = false">
         Close
       </v-btn>
     </template>
@@ -318,7 +291,8 @@
 }
 </style>
 <script>
-import { EventEmitter2, createjs, ROSLIB, ROS2D,MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
+import { io } from "socket.io-client";
+import { ROSLIB, MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
 export default {
   data() {
     return {
@@ -326,9 +300,10 @@ export default {
         open: false,
         message: "",
       },
+      socket: null,
       maps: [
-        { label: "Map 1 (Public)", id: "map1", ros_address: 'ws://124.244.207.24:9090', camera_port: '9080'},
-        { label: "Map 2 (Local)", id: "map2", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080'},
+        { label: "Map 1 (Public)", id: "map1", ros_address: 'ws://124.244.207.24:9090', camera_port: '9080' },
+        { label: "Map 2 (Local)", id: "map2", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
       ],
       map_select: "map1",
       map_label: "Map 1 (Public)",
@@ -526,20 +501,27 @@ export default {
       }
     }, 10000);
   },
+  unmounted() {
+    var self = this;
+    if (self.socket) {
+      self.socket.disconnect();
+    }
+    //this.ros.close()
+  },
   methods: {
-    changeCameraFeedStatus(){
+    changeCameraFeedStatus() {
       var self = this;
-      if(self.camera_feed==false){
+      if (self.camera_feed == false) {
         self.camera_feed = true;
-        if(self.connected==true){
-          setTimeout(function(){
+        if (self.connected == true) {
+          setTimeout(function () {
             self.setCamera();
-          },500);
+          }, 500);
         }
       }
-      else if(self.camera_feed==true){
+      else if (self.camera_feed == true) {
         self.camera_feed = false;
-        if(self.connected==true){
+        if (self.connected == true) {
           self.unsetCamera();
         }
       }
@@ -548,11 +530,11 @@ export default {
       var self = this;
       let mapObject = self.maps.filter(map => map.id === v)[0];
       self.map_label = mapObject.label;
-      if(self.connected){
+      if (self.connected) {
         self.ros.close()
       }
-      self.rosbridge_address= mapObject.ros_address;
-      self.camera_port= mapObject.camera_port;
+      self.rosbridge_address = mapObject.ros_address;
+      self.camera_port = mapObject.camera_port;
     },
     startDrawing() {
       this.startAddPoint = true;
@@ -561,10 +543,10 @@ export default {
       this.unsetCamera();
       this.camera_feed = false;
     },
-    handleImageClick(x,y) {
+    handleImageClick(x, y) {
       var self = this;
-      if(self.startAddPoint){
-        if(self.selectStartPoint == false){
+      if (self.startAddPoint) {
+        if (self.selectStartPoint == false) {
           self.startPoint.x = x;
           self.startPoint.y = y;
           self.selectStartPoint = true;
@@ -573,7 +555,7 @@ export default {
           self.snackbar.message = "Point location is selected. Please select direction.";
           self.snackbar.open = true;
         }
-        else if(self.selectEndPoint == false){
+        else if (self.selectEndPoint == false) {
           self.endPoint.x = x;
           self.endPoint.y = y;
           self.addPointFinal.x = self.startPoint.x.toFixed(2);
@@ -585,19 +567,19 @@ export default {
           let deltaY = self.endPoint.y - self.startPoint.y;
           let deltaX = self.endPoint.x - self.startPoint.x;
           self.theta = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
-          if(self.theta!=0 && self.theta!=180) {
-            self.theta*=-1;
+          if (self.theta != 0 && self.theta != 180) {
+            self.theta *= -1;
           }
           self.addPointFinal.theta = self.theta.toFixed(2);
           self.openConfirmAddPoint();
-          }
+        }
       }
     },
-    openConfirmAddPoint (){
+    openConfirmAddPoint() {
       var self = this;
       self.confirmAddPointDialog = true;
     },
-    closeConfirmAddPoint(){
+    closeConfirmAddPoint() {
       var self = this;
       self.confirmAddPointDialog = false;
       self.addPointFinal.x = null;
@@ -605,8 +587,8 @@ export default {
       self.addPointFinal.theta = null;
       self.addPointFinal.label = "";
     },
-    confirmAddPoint(){
-      var self = this;console.log(self.addPointFinal);
+    confirmAddPoint() {
+      var self = this; console.log(self.addPointFinal);
       self.map_points.push({
         x: self.addPointFinal.x,
         y: self.addPointFinal.y,
@@ -653,7 +635,46 @@ export default {
     deletePoint(index) {
       this.map_points.splice(index, 1);
     },
+    startNavigate(){
+      var self = this;
+      let map_name = 'Mp55';
+      if(map_name!=null && map_name.trim()!=""){
+        self.map_settings = {
+          map_static: true,
+          map_slam: false,
+          map_file: map_name,
+          map_autosave: false
+        }
+        self.socket = io("http://192.168.1.14:8000");
+        //self.socket = io("http://124.244.207.24:8000");
+        self.socket.on('connect', function() {
+          console.log('Connected to the server');
+          self.socket.emit('start_navigate', self.map_settings);
+        });
+        self.socket.on('disconnect', function() {
+          console.log('Disconnected from the server');
+        });
+        self.socket.on('map_navigate', function(message) {
+          console.log(message);
+        });
+        self.socket.on('map_stopped', function(message) {
+          console.log(message);
+          self.socket.disconnect();
+          self.disconnect();
+        });
+        self.socket.on('map_saved', function(message) {
+          console.log(message);
+        });
+      }
+      else {
+      }
+    },
+    stopNavigate(){
+      var self = this;
+      self.socket.disconnect();
+    },
     connect: function () {
+      var self = this;
       this.loading = true
       this.ros = new ROSLIB.Ros({
         url: this.rosbridge_address
@@ -662,7 +683,7 @@ export default {
         this.logs.unshift((new Date()).toTimeString() + ' - Connected!')
         this.connected = true
         console.log('Connection to ROSBridge established!')
-        if(this.camera_feed) this.setCamera()
+        if (this.camera_feed) this.setCamera()
         this.loading = false
         this.pubInterval = setInterval(this.publish, 100);
         this.setup3DViewer()
@@ -676,7 +697,7 @@ export default {
         this.connected = false
         this.loading = false
         console.log('Connection to ROSBridge was closed!')
-        if(this.camera_feed) this.unsetCamera()
+        if (this.camera_feed) this.unsetCamera()
         this.unset3DViewer()
         clearInterval(this.pubInterval)
         this.camera_feed = false
@@ -862,7 +883,7 @@ export default {
       let mx = dpp * mouseY + this.viewer.camera.position.x - this.viewer.scene.position.x
       let my = dpp * mouseX + this.viewer.camera.position.y - this.viewer.scene.position.y
       console.log("MX = " + mx + ", MY = " + my)
-      if(this.startAddPoint==true){
+      if (this.startAddPoint == true) {
         this.handleImageClick(mx, my);
       }
       //let vector = new THREE.Vector3((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1, 0.5)
@@ -875,12 +896,14 @@ export default {
       this.joystick.vertical = 0
       this.joystick.horizontal = 0
     },
-    commandWaypoint: function (x, y, p, q, r, s) {
+    commandWaypoint: function (x, y, r) {
       let actionClient = new ROSLIB.ActionClient({
         ros: this.ros,
         serverName: '/move_base',
         actionName: 'move_base_msgs/MoveBaseAction'
       })
+      let quat = new THREE.Quaternion();
+      quat.setFromEuler(new THREE.Euler(0, 0, r * Math.PI / 180))
       let currentTime = new Date()
       let secs = Math.floor(currentTime.getTime() / 1000);
       let nsecs = Math.round(1000000000 * (currentTime.getTime() / 1000 - secs));
@@ -895,7 +918,7 @@ export default {
             },
             pose: {
               position: { x: x, y: y, z: 0 },
-              orientation: { x: p, y: q, z: r, w: s }
+              orientation: { x: quat.x, y: quat.y, z: quat.z, w: quat.w }
             }
           }
         }
@@ -921,32 +944,32 @@ export default {
 </script>
 
 <style type="text/css">
-    #dragstartzone {
-      text-align: center;
-      position: relative;
-      display: inline-block;
-      width: 200px;
-      height: 200px;
-      border: 1px solid #333;
-      border-radius: 50%;
-      z-index: 10;
-      -moz-user-select: -moz-none;
-      -khtml-user-select: none;
-      -webkit-user-select: none;
-    }
+#dragstartzone {
+  text-align: center;
+  position: relative;
+  display: inline-block;
+  width: 200px;
+  height: 200px;
+  border: 1px solid #333;
+  border-radius: 50%;
+  z-index: 10;
+  -moz-user-select: -moz-none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+}
 
-    #dragCircle {
-      position: absolute;
-      z-index: 9;
-      border: 1px solid transparent;
-      border-radius: 50%;
-      background-color: rgba(0, 0, 0, 30%);
-      -moz-user-select: -moz-none;
-      -khtml-user-select: none;
-      -webkit-user-select: none;
-    }
+#dragCircle {
+  position: absolute;
+  z-index: 9;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 30%);
+  -moz-user-select: -moz-none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+}
 
-    #dragCircle:hover {
-      background-color: lightcoral;
-    }
-  </style>
+#dragCircle:hover {
+  background-color: lightcoral;
+}
+</style>
