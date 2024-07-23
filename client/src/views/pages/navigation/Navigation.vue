@@ -1,6 +1,11 @@
 <template>
   <v-row>
     <v-col cols="12">
+      <v-select label="Public/Local (temporary)" :items="sources" variant="solo" item-title="label" item-value="id"
+        v-model="ros_source" @update:modelValue="onSourceSelectChange">
+      </v-select>
+    </v-col>
+    <v-col cols="12">
       <v-select label="Select Map:" :items="maps" variant="solo" item-title="label" item-value="id" v-model="map_select"
         @update:modelValue="onMapSelectChange">
       </v-select>
@@ -17,15 +22,18 @@
         Add Point
       </v-btn>
       <v-btn class="mx-1" :disabled="startAddPoint || connected == false">Edit Point</v-btn>
-      <v-btn class="mx-1" @click="add_plan_dialog = true" :disabled="startAddPoint || connected == false">Add Plan</v-btn>
+      <v-btn class="mx-1" @click="add_plan_dialog = true" :disabled="startAddPoint || connected == false">Add
+        Plan</v-btn>
       <v-btn class="mx-1" :disabled="startAddPoint || connected == false">Localize</v-btn>
 
       <v-btn class="mx-1" color="grey-800" variant="outlined" @click="changeCameraFeedStatus">
         <v-icon>mdi-camera</v-icon>
       </v-btn>
 
-      <v-btn v-if="connected" color="error" variant="flat" :disabled="loading" @click="stopNavigate();disconnect();">DisConnect!</v-btn>
-      <v-btn v-else color="success" variant="flat" :disabled="loading" @click="startNavigate();connect();">Connect!</v-btn>
+      <v-btn v-if="connected" color="error" variant="flat" :disabled="loading"
+        @click="stopNavigate(); disconnect();">DisConnect!</v-btn>
+      <v-btn v-else color="success" variant="flat" :disabled="loading"
+        @click="startNavigate(); connect();">Connect!</v-btn>
     </VCol>
   </VRow>
   <VRow style="margin-bottom:200px">
@@ -89,13 +97,22 @@
       :headers="map_headers" :items="map_points">
       <template v-slot:item="{ item, index }">
         <tr>
+          <td>{{ item.id }}</td>
           <td>{{ item.x }}</td>
           <td>{{ item.y }}</td>
           <td>{{ item.theta }}</td>
           <td>{{ item.label }}</td>
-          <td>            
-            <v-btn class="mx-1" color="success" @click="commandWaypoint(item.x, item.y, item.theta)"><v-icon size="large">mdi-forward</v-icon></v-btn>
-            <v-btn class="mx-1" color="error" @click="deletePoint(index)"><v-icon size="large">mdi-delete</v-icon></v-btn>
+          <!--td>
+            <v-btn class="mx-1" color="success" @click="commandWaypoint(item.x, item.y, item.theta)"><v-icon
+                size="large">mdi-forward</v-icon></v-btn>
+            <v-btn class="mx-1" color="error" @click="deletePoint(index)"><v-icon
+                size="large">mdi-delete</v-icon></v-btn>
+          </td-->
+          <td>
+            <v-btn class="mx-1" color="success" @click="driveToTarget(item.id)"><v-icon
+                size="large">mdi-forward</v-icon></v-btn>
+            <v-btn class="mx-1" color="error" @click="deleteTarget(item.id)"><v-icon
+                size="large">mdi-delete</v-icon></v-btn>
           </td>
         </tr>
       </template>
@@ -301,15 +318,36 @@ export default {
         message: "",
       },
       socket: null,
-      maps: [
-        { label: "Map 1 (Public)", id: "map1", ros_address: 'ws://124.244.207.24:9090', camera_port: '9080' },
-        { label: "Map 2 (Local)", id: "map2", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+      sources: [
+        { label: "Local (192.xxx.xxx.xxx)", id: "local", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "Public (124.xxx.xxx.xxx)", id: "public", ros_address: 'ws://124.244.207.24:9090', camera_port: '9080' },
       ],
-      map_select: "map1",
-      map_label: "Map 1 (Public)",
+      maps: [
+        { label: "auto_saved_map_1679562901604", id: "auto_saved_map_1679562901604", ros_address: 'ws://124.244.207.24:9090', camera_port: '9080' },
+        { label: "auto_saved_map_1689923898047", id: "auto_saved_map_1689923898047", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "auto_saved_map_1690446338804", id: "auto_saved_map_1690446338804", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "auto_saved_map_1690798019130", id: "auto_saved_map_1690798019130", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "auto_saved_map_1690955612584", id: "auto_saved_map_1690955612584", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "auto_saved_map_1721468599919", id: "auto_saved_map_1721468599919", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "auto_saved_map_1721492024958", id: "auto_saved_map_1721492024958", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "auto_saved_map_1721493300849", id: "auto_saved_map_1721493300849", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "auto_saved_map_1721501729301", id: "auto_saved_map_1721502118988", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "auto_saved_map_1721502445020", id: "auto_saved_map_1721502445020", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "auto_saved_map_1721503947365", id: "auto_saved_map_1721503947365", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "bookstore", id: "bookstore", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "Mp2", id: "Mp2", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "Mp3", id: "Mp3", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "Mp4", id: "Mp4", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "Mp55", id: "Mp55", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+
+      ],
+      ros_source: 'local',
+      map_select: null,
+      map_label: "",
       camera_feed: false,
       add_plan_dialog: false,
       map_headers: [
+        { title: 'id', key: 'id' },
         { title: 'X[m]', key: 'x' },
         { title: 'Y[m]', key: 'y' },
         { title: 'Theta[°]', key: 'theta' },
@@ -354,84 +392,55 @@ export default {
       panel: [0, 1, 2],
       sequence_mode: "1",
       added_to_plan: [],
-      data: [
-        { name: 'John', age: 30 },
-        { name: 'Jane', age: 25 },
-        { name: 'Bob', age: 35 },
-        { name: 'Alice', age: 28 },
-      ],
       map_points: [
         {
-          x: 9.07,
-          y: -0.55,
-          theta: -90.00,
-          label: "Pt1",
+          "id": 1,
+          "x": -2.55,
+          "y": -0.35,
+          "theta": -1.59,
+          "label": "538"
         },
         {
-          x: 10.43,
-          y: -24.02,
-          theta: -90.00,
-          label: "Pt2",
+          "id": 2,
+          "x": -2.34,
+          "y": -5.10,
+          "theta": 1.57,
+          "label": "2"
         },
         {
-          x: 10.28,
-          y: -44.29,
-          theta: -90.00,
-          label: "Pt3",
+          "id": 3,
+          "x": -3.01,
+          "y": 3.05,
+          "theta": -1.57,
+          "label": "corridor"
         },
         {
-          x: 9.92,
-          y: -56.84,
-          theta: 180.00,
-          label: "Pt4",
+          "id": 4,
+          "x": -0.73,
+          "y": -0.41,
+          "theta": -0.46,
+          "label": "0"
         },
         {
-          x: -7.36,
-          y: -57.90,
-          theta: 180.00,
-          label: "Pt5",
+          "id": 5,
+          "x": 0.66,
+          "y": -3.41,
+          "theta": 1.55,
+          "label": "test"
         },
         {
-          x: -15.73,
-          y: -39.91,
-          theta: 90.00,
-          label: "Pt6",
+          "id": 6,
+          "x": "-2.54",
+          "y": "5.40",
+          "theta": "-0.91",
+          "label": "Pt11"
         },
         {
-          x: -16.05,
-          y: -9.24,
-          theta: 0.00,
-          label: "Pt7",
-        },
-        {
-          x: -10.09,
-          y: 17.96,
-          theta: 0.00,
-          label: "Pt8",
-        },
-        {
-          x: 7.90,
-          y: 17.78,
-          theta: 0.00,
-          label: "Pt9",
-        },
-        {
-          x: 9.25,
-          y: 5.75,
-          theta: -90.00,
-          label: "Pt10",
-        },
-        {
-          x: 1.00,
-          y: 0.05,
-          theta: 0.00,
-          label: "Charge",
-        },
-        {
-          x: 7.05,
-          y: -16.74,
-          theta: 90.57,
-          label: "k",
+          "id": 7,
+          "x": "4.61",
+          "y": "-1.05",
+          "theta": "-3.58",
+          "label": "current"
         }
       ],
       changes: [],
@@ -439,10 +448,9 @@ export default {
       ros: null,
       logs: [],
       loading: false,
-      //rosbridge_address: 'ws://192.168.1.14:9090',
-      rosbridge_address: 'ws://124.244.207.24:9090',
+      rosbridge_address: 'ws://192.168.1.14:9090',
       port: '9090',
-      camera_port: '9080',
+      camera_port: '8080',
       dragging: false,
       navigating: false,
       x: 'no',
@@ -533,8 +541,21 @@ export default {
       if (self.connected) {
         self.ros.close()
       }
-      self.rosbridge_address = mapObject.ros_address;
-      self.camera_port = mapObject.camera_port;
+      if (self.socket) {
+        self.socket.disconnect();
+      }
+    },
+    onSourceSelectChange(v) {
+      var self = this;
+      let sourceObject = self.sources.filter(source => source.id === v)[0];
+      self.rosbridge_address = sourceObject.ros_address;
+      self.camera_port = sourceObject.camera_port;
+      if (self.connected) {
+        self.ros.close()
+      }
+      if (self.socket) {
+        self.socket.disconnect();
+      }
     },
     startDrawing() {
       this.startAddPoint = true;
@@ -567,9 +588,6 @@ export default {
           let deltaY = self.endPoint.y - self.startPoint.y;
           let deltaX = self.endPoint.x - self.startPoint.x;
           self.theta = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
-          if (self.theta != 0 && self.theta != 180) {
-            self.theta *= -1;
-          }
           self.addPointFinal.theta = self.theta.toFixed(2);
           self.openConfirmAddPoint();
         }
@@ -589,6 +607,12 @@ export default {
     },
     confirmAddPoint() {
       var self = this; console.log(self.addPointFinal);
+      self.socket.emit('new_target', {
+        label: self.addPointFinal.label,
+        x: self.addPointFinal.x,
+        y: self.addPointFinal.y,
+        theta: self.addPointFinal.theta
+      });
       self.map_points.push({
         x: self.addPointFinal.x,
         y: self.addPointFinal.y,
@@ -603,6 +627,14 @@ export default {
       self.addPointFinal.theta = null;
       self.addPointFinal.label = "";
       self.confirmAddPointDialog = false;
+    },
+    driveToTarget(target_id) {
+      var self = this; 
+      self.socket.emit('drive_to_target', target_id);
+    },
+    deleteTarget(target_id) {
+      var self = this;
+      self.socket.emit('delete_target', target_id);
     },
     addToPlanRoutes(item) {
       console.log(item);
@@ -635,10 +667,10 @@ export default {
     deletePoint(index) {
       this.map_points.splice(index, 1);
     },
-    startNavigate(){
+    startNavigate() {
       var self = this;
-      let map_name = 'Mp55';
-      if(map_name!=null && map_name.trim()!=""){
+      let map_name = self.map_select;
+      if (map_name != null && map_name.trim() != "") {
         self.map_settings = {
           map_static: true,
           map_slam: false,
@@ -647,61 +679,66 @@ export default {
         }
         self.socket = io("http://192.168.1.14:8000");
         //self.socket = io("http://124.244.207.24:8000");
-        self.socket.on('connect', function() {
+        self.socket.on('connect', function () {
           console.log('Connected to the server');
           self.socket.emit('start_navigate', self.map_settings);
         });
-        self.socket.on('disconnect', function() {
+        self.socket.on('disconnect', function () {
           console.log('Disconnected from the server');
         });
-        self.socket.on('map_navigate', function(message) {
+        self.socket.on('map_navigate', function (message) {
           console.log(message);
         });
-        self.socket.on('map_stopped', function(message) {
+        self.socket.on('map_stopped', function (message) {
           console.log(message);
           self.socket.disconnect();
           self.disconnect();
         });
-        self.socket.on('map_saved', function(message) {
+        self.socket.on('map_saved', function (message) {
           console.log(message);
         });
       }
       else {
+        self.snackbar.open = true;
+        self.snackbar.message = "Please select a map!";
       }
     },
-    stopNavigate(){
+    stopNavigate() {
       var self = this;
       self.socket.disconnect();
     },
     connect: function () {
       var self = this;
-      this.loading = true
-      this.ros = new ROSLIB.Ros({
-        url: this.rosbridge_address
-      })
-      this.ros.on('connection', () => {
-        this.logs.unshift((new Date()).toTimeString() + ' - Connected!')
-        this.connected = true
-        console.log('Connection to ROSBridge established!')
-        if (this.camera_feed) this.setCamera()
-        this.loading = false
-        this.pubInterval = setInterval(this.publish, 100);
-        this.setup3DViewer()
-      })
-      this.ros.on('error', (error) => {
-        console.log('Something went wrong when trying to connect')
-        this.logs.unshift((new Date()).toTimeString() + ` - Error: ${error}`)
-      })
-      this.ros.on('close', () => {
-        this.logs.unshift((new Date()).toTimeString() + ' - Disconnected!')
-        this.connected = false
-        this.loading = false
-        console.log('Connection to ROSBridge was closed!')
-        if (this.camera_feed) this.unsetCamera()
-        this.unset3DViewer()
-        clearInterval(this.pubInterval)
-        this.camera_feed = false
-      })
+      let map_name = self.map_select;
+      if (map_name != null && map_name.trim() != "") {
+        this.loading = true
+        this.ros = new ROSLIB.Ros({
+          url: this.rosbridge_address
+        })
+        this.ros.on('connection', () => {
+          this.logs.unshift((new Date()).toTimeString() + ' - Connected!')
+          this.connected = true
+          console.log('Connection to ROSBridge established!')
+          if (this.camera_feed) this.setCamera()
+          this.loading = false
+          this.pubInterval = setInterval(this.publish, 100);
+          this.setup3DViewer()
+        })
+        this.ros.on('error', (error) => {
+          console.log('Something went wrong when trying to connect')
+          this.logs.unshift((new Date()).toTimeString() + ` - Error: ${error}`)
+        })
+        this.ros.on('close', () => {
+          this.logs.unshift((new Date()).toTimeString() + ' - Disconnected!')
+          this.connected = false
+          this.loading = false
+          console.log('Connection to ROSBridge was closed!')
+          if (this.camera_feed) this.unsetCamera()
+          this.unset3DViewer()
+          clearInterval(this.pubInterval)
+          this.camera_feed = false
+        })
+      }
     },
     publish: function () {
       let topic = new ROSLIB.Topic({

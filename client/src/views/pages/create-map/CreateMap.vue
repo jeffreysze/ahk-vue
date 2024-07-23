@@ -1,8 +1,8 @@
 <template>  
   <div class="ma-2">
-  <v-btn v-if="mapping==false" color="secondary" density="comfortable" @click="startMapping()">Start Mapping <v-icon>mdi-play-circle</v-icon></v-btn>
+  <v-btn v-if="mapping==false || socket_connected==false" color="secondary" density="comfortable" @click="startMapping()">Start Mapping <v-icon>mdi-play-circle</v-icon></v-btn>
   <!--v-btn v-if="mapping==true" color="error" density="comfortable" @click="stopMapping()">Stop Mapping <v-icon>mdi-stop-circle</v-icon></v-btn-->
-  <v-btn v-if="mapping==true" class="mx-3" color="error" @click="saveMap()">Save & Stop Mapping  <v-icon>mdi-floppy</v-icon></v-btn>
+  <v-btn v-if="mapping==true && socket_connected==true" class="mx-3" color="error" @click="saveMap()">Save & Stop Mapping  <v-icon>mdi-floppy</v-icon></v-btn>
   <v-btn class="mx-1" color="grey-800" variant="outlined" density="comfortable" @click="changeCameraFeedStatus">
     <v-icon>mdi-camera</v-icon>
   </v-btn>
@@ -70,6 +70,7 @@ import { ROSLIB, MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
 export default {
   data() {
     return {
+      socket_connected: false,
       socket: null,
       mapping: false,
       map_settings: {},
@@ -82,10 +83,10 @@ export default {
       ros: null,
       logs: [],
       loading: false,
-      //rosbridge_address: 'ws://192.168.1.14:9090',
-      rosbridge_address: 'ws://124.244.207.24:9090',
+      rosbridge_address: 'ws://192.168.1.14:9090',
+      //rosbridge_address: 'ws://124.244.207.24:9090',
       port: '9090',
-      camera_port: '9080',
+      camera_port: '8080',
       dragging: false,
       navigating: false,
       x: 'no',
@@ -148,6 +149,7 @@ export default {
     var self = this;
     if (self.socket) {
       self.socket.disconnect();
+      self.disconnect();
     }
     //this.ros.close()
   },
@@ -184,6 +186,7 @@ export default {
         //self.socket = io("http://124.244.207.24:8000");
         self.socket.on('connect', function() {
           console.log('Connected to the server');
+          self.socket_connected = true;
           self.socket.emit('start_mapping', self.map_settings);
         });
         self.socket.on('disconnect', function() {
