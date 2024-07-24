@@ -64,7 +64,7 @@ const handleNavScroll = evt => {
           />
 
           <h1 class="leading-normal" style="color:blue">
-            <i>KYOEI</i>
+            <i>I-Robotics</i>
           </h1>
         </RouterLink>
       </slot>

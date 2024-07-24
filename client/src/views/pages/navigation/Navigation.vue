@@ -18,13 +18,13 @@
   </VRow>
   <VRow>
     <VCol>
-      <v-btn class="mx-1" @click="startDrawing" :disabled="startAddPoint || connected == false">
+      <v-btn class="mx-1" @click="startDrawing('add_point')" :disabled="startAddPoint || connected == false || startLocalize ">
         Add Point
       </v-btn>
-      <v-btn class="mx-1" :disabled="startAddPoint || connected == false">Edit Point</v-btn>
-      <v-btn class="mx-1" @click="add_plan_dialog = true" :disabled="startAddPoint || connected == false">Add
+      <v-btn class="mx-1" :disabled="startAddPoint || connected == false|| startLocalize ">Edit Point</v-btn>
+      <v-btn class="mx-1" @click="add_plan_dialog = true" :disabled="startAddPoint || connected == false || startLocalize ">Add
         Plan</v-btn>
-      <v-btn class="mx-1" :disabled="startAddPoint || connected == false">Localize</v-btn>
+      <v-btn class="mx-1" :disabled="startAddPoint || connected == false || startLocalize " @click="startDrawing('localize')">Localize</v-btn>
 
       <v-btn class="mx-1" color="grey-800" variant="outlined" @click="changeCameraFeedStatus">
         <v-icon>mdi-camera</v-icon>
@@ -214,8 +214,11 @@
   <v-dialog v-model="confirmAddPointDialog" max-width="500">
     <v-card rounded="lg">
       <v-card-title class="d-flex justify-space-between align-center">
-        <div class="text-h5  ps-2">
+        <div v-if='startAddPoint' class="text-h5  ps-2">
           Confirm Add Point
+        </div>
+        <div v-else-if='startLocalize' class="text-h5  ps-2">
+          Confirm Localization Point
         </div>
         <v-btn icon="mdi-close" variant="text" @click="closeConfirmAddPoint()">
         </v-btn>
@@ -247,7 +250,7 @@
               {{ addPointFinal.theta }}
             </td>
           </tr>
-          <tr>
+          <tr v-if="startAddPoint">
             <th class="text-left">
               Label
             </th>
@@ -366,6 +369,7 @@ export default {
       ],
       confirmAddPointDialog: false,
       startAddPoint: false,
+      startLocalize: false,
       showOverlay: false,
       showArrow: false,
       selectStartPoint: false,
@@ -557,16 +561,22 @@ export default {
         self.socket.disconnect();
       }
     },
-    startDrawing() {
-      this.startAddPoint = true;
-      this.snackbar.message = "You are Adding Point ...";
+    startDrawing(type) {
+      if(type=='add_point'){
+        this.startAddPoint = true;
+        this.snackbar.message = "You are Adding Point ...";
+      }
+      else if(type=='localize'){
+        this.startLocalize = true;
+        this.snackbar.message = "You are localizing robot ...";
+      }
       this.snackbar.open = true;
       this.unsetCamera();
       this.camera_feed = false;
     },
     handleImageClick(x, y) {
       var self = this;
-      if (self.startAddPoint) {
+      if (self.startAddPoint || self.startLocalize) {
         if (self.selectStartPoint == false) {
           self.startPoint.x = x;
           self.startPoint.y = y;
@@ -582,13 +592,19 @@ export default {
           self.addPointFinal.x = self.startPoint.x.toFixed(2);
           self.addPointFinal.y = self.startPoint.y.toFixed(2);
           self.showOverlay = false;
-          self.startAddPoint = false;
-          self.selectEndPoint = false;
-          self.selectStartPoint = false;
           let deltaY = self.endPoint.y - self.startPoint.y;
-          let deltaX = self.endPoint.x - self.startPoint.x;
-          self.theta = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+          let deltaX = self.endPoint.x - self.startPoint.x;          
+          self.theta = Math.atan2(deltaY, deltaX) 
+          //self.theta = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
           self.addPointFinal.theta = self.theta.toFixed(2);
+          if(self.startAddPoint == self.startLocalize){
+            self.startAddPoint = false;
+            self.startLocalize = false;
+            self.selectEndPoint = false;
+            self.selectStartPoint = false;
+            self.snackbar.message = "Cannot recognize. Please add point / localize again.";
+            self.snackbar.open = true;
+          }
           self.openConfirmAddPoint();
         }
       }
@@ -604,29 +620,43 @@ export default {
       self.addPointFinal.y = null;
       self.addPointFinal.theta = null;
       self.addPointFinal.label = "";
+      self.startAddPoint = false,
+      self.startLocalize = false;
+      self.selectEndPoint = false;
+      self.selectStartPoint = false;
     },
     confirmAddPoint() {
       var self = this; console.log(self.addPointFinal);
-      self.socket.emit('new_target', {
-        label: self.addPointFinal.label,
-        x: self.addPointFinal.x,
-        y: self.addPointFinal.y,
-        theta: self.addPointFinal.theta
-      });
-      self.map_points.push({
-        x: self.addPointFinal.x,
-        y: self.addPointFinal.y,
-        theta: self.addPointFinal.theta,
-        label: self.addPointFinal.label
-      });
-      self.snackbar.open = true;
-      self.snackbar.message = "New point is added.";
+      if(self.startAddPoint){
+        self.socket.emit('new_target', {
+          label: self.addPointFinal.label,
+          x: self.addPointFinal.x,
+          y: self.addPointFinal.y,
+          theta: self.addPointFinal.theta
+        });
+        self.snackbar.open = true;
+        self.snackbar.message = "New point is added.";
+      }
+      else if(self.startLocalize){
+        let robot_pose = {
+          robot_pos_x: self.addPointFinal.x,
+          robot_pos_y: self.addPointFinal.y,
+          robot_pos_theta: self.addPointFinal.theta
+        }
+        self.socket.emit('set_initialpose', robot_pose);
+        self.snackbar.open = true;
+        self.snackbar.message = "Localizing robot ...";
+      }
       self.confirmAddPointDialog = false;
       self.addPointFinal.x = null;
       self.addPointFinal.y = null;
       self.addPointFinal.theta = null;
       self.addPointFinal.label = "";
       self.confirmAddPointDialog = false;
+      self.startAddPoint = false,
+      self.startLocalize = false;
+      self.selectEndPoint = false;
+      self.selectStartPoint = false;
     },
     driveToTarget(target_id) {
       var self = this; 
@@ -696,6 +726,16 @@ export default {
         });
         self.socket.on('map_saved', function (message) {
           console.log(message);
+        });
+        self.socket.on('get_targets', function (targets){
+          console.log(targets);
+          self.map_points = targets;
+        });
+        self.socket.on('localized', function (message){
+          self.start
+          console.log(message);
+          self.snackbar.message = message;
+          self.snackbar.open = true;
         });
       }
       else {
@@ -920,7 +960,7 @@ export default {
       let mx = dpp * mouseY + this.viewer.camera.position.x - this.viewer.scene.position.x
       let my = dpp * mouseX + this.viewer.camera.position.y - this.viewer.scene.position.y
       console.log("MX = " + mx + ", MY = " + my)
-      if (this.startAddPoint == true) {
+      if (this.startAddPoint == true || this.startLocalize == true) {
         this.handleImageClick(mx, my);
       }
       //let vector = new THREE.Vector3((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1, 0.5)

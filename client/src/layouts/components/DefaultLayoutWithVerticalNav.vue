@@ -33,7 +33,7 @@ const upgradeBanner = computed(() => {
 
         <!-- 👉 Search -->
         <!--h1 class="leading-normal" style="color:blue">
-          <i>KYOEI</i>
+          <i>I-Robotics</i>
         </h1-->
 
         <VSpacer />

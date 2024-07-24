@@ -3,7 +3,7 @@
     <!-- 👉 Footer: left content -->
      <span></span>
     <span class="d-md-flex gap-x-4 text-primary d-none">
-      KYOEI 
+      I-Robotics
       &copy;
       {{ new Date().getFullYear() }}
     </span>

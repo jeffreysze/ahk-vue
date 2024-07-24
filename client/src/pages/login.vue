@@ -21,7 +21,7 @@ const isPasswordVisible = ref(false)
         
 
         <VCardTitle class="text-2xl font-weight-bold">
-          <h3 style='color: blue;'><i>KYOEI&nbsp;</i></h3>
+          <h3 style='color: blue;'><i>I-Robotics&nbsp;</i></h3>
         </VCardTitle>
       </VCardItem>
 
