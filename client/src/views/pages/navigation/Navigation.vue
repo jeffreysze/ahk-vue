@@ -1,129 +1,143 @@
 <template>
-  <v-row>
-    <v-col cols="12">
-      <v-select label="Public/Local (temporary)" :items="sources" variant="solo" item-title="label" item-value="id"
-        v-model="ros_source" @update:modelValue="onSourceSelectChange">
-      </v-select>
-    </v-col>
-    <v-col cols="12">
-      <v-select label="Select Map:" :items="maps" variant="solo" item-title="label" item-value="id" v-model="map_select"
-        @update:modelValue="onMapSelectChange">
-      </v-select>
-    </v-col>
-  </v-row>
-  <VRow>
-    <VCol sm="12" md="9">
-      <h2>{{ map_label }}</h2>
-    </VCol>
-  </VRow>
-  <VRow>
-    <VCol>
-      <v-btn class="mx-1" @click="startDrawing('add_point')" :disabled="startAddPoint || connected == false || startLocalize ">
-        Add Point
-      </v-btn>
-      <v-btn class="mx-1" :disabled="startAddPoint || connected == false|| startLocalize ">Edit Point</v-btn>
-      <v-btn class="mx-1" @click="add_plan_dialog = true" :disabled="startAddPoint || connected == false || startLocalize ">Add
-        Plan</v-btn>
-      <v-btn class="mx-1" :disabled="startAddPoint || connected == false || startLocalize " @click="startDrawing('localize')">Localize</v-btn>
-
-      <v-btn class="mx-1" color="grey-800" variant="outlined" @click="changeCameraFeedStatus">
-        <v-icon>mdi-camera</v-icon>
-      </v-btn>
-
-      <v-btn v-if="connected" color="error" variant="flat" :disabled="loading"
-        @click="stopNavigate(); disconnect();">DisConnect!</v-btn>
-      <v-btn v-else color="success" variant="flat" :disabled="loading"
-        @click="startNavigate(); connect();">Connect!</v-btn>
-    </VCol>
-  </VRow>
-  <VRow style="margin-bottom:200px">
-    <v-col sm="12" md="9">
-      <v-card>
-        <v-card-title>
-          <h4>Robot Model</h4>
-        </v-card-title>
-        <v-card-text>
-          <div class="text-center">
-            <div id="visualization-canvas"></div>
-          </div>
-        </v-card-text>
-      </v-card>
-    </v-col>
-    <v-col v-if="camera_feed" sm="12" md="4" class="position-absolute">
-      <v-responsive :aspect-ratio="16 / 9" class="border-lg border-primary bg-white h-100 w-100">
-        <v-sheet class="bg-white h-100 w-100 text-align: center">
-          <v-card height="100%">
+  <div v-if="slam_stopped == false">
+    <v-row>
+      <v-col>
+        <v-col col="12">
+          <v-card>
             <v-card-title>
-              <h4>Camera</h4>
+              <h4 class="text-wrap" style="color:red"><v-icon>mdi-alert-box</v-icon> Robot is under SLAM of Map: "{{ slam_filename }}" that is without map saved. Please go to Create Map to finish process.</h4>
             </v-card-title>
-            <v-card-text>
-              <div class="text-center">
-                <div id="divCamera"></div>
-              </div>
-            </v-card-text>
           </v-card>
-        </v-sheet>
-      </v-responsive>
-    </v-col>
-    <v-col sm="12" md="3" style="background-color:#dadbf1; min-height: 175px">
-      <v-card class="text-center">
-        <v-card-title>
-          <h4>Joystick</h4>
-        </v-card-title>
-        <v-card-text>
-          <hr>
-          <br>
-          <div id="dragstartzone" @mousedown="startDrag" @mousemove="doDrag" @mouseup="stopDrag">
-          </div>
-          <div id="dragCircle" :style="dragCircleStyle"></div>
-          <p>X: {{ joystick.vertical.toFixed(3) }}</p>
-          <p>Y: {{ joystick.horizontal.toFixed(3) }}</p>
-        </v-card-text>
-      </v-card>
-      <br>
-      <v-card>
-        <v-card-title class="text-center">
-          <h4>Logs</h4>
-        </v-card-title>
-        <v-card-text>
-          <p v-for="log in logs">{{ log }}</p>
-        </v-card-text>
-      </v-card>
-    </v-col>
+        </v-col>
+      </v-col>
+    </v-row>
+  </div>    
+  <div v-else-if="slam_stopped == true">
+    <v-row>
+      <v-col cols="12">
+        <v-select :label="headerLocale('select_map')" :items="maps" variant="solo" item-title="label" item-value="id" v-model="map_select"
+          @update:modelValue="onMapSelectChange">
+        </v-select>
+      </v-col>
+    </v-row>
+    <VRow>
+      <VCol sm="12" md="9">
+        <h2>{{ map_select }}</h2>
+      </VCol>
+    </VRow>
+    <VRow>
+      <VCol>
+        <v-btn class="mx-1" @click="startDrawing('add_point')" :disabled="startAddPoint || connected == false || startLocalize ">
+          {{ $t("navigation.add-point.btn") }}
+        </v-btn>
+        <!--v-btn class="mx-1" :disabled="startAddPoint || connected == false|| startLocalize ">
+          {{ $t("navigation.edit-point") }}
+        </v-btn-->
+        <v-btn class="mx-1" @click="add_plan_dialog = true" :disabled="startAddPoint || connected == false || startLocalize ">
+          {{ $t("navigation.add-plan.btn") }}
+        </v-btn>
+        <v-btn class="mx-1" :disabled="startAddPoint || connected == false || startLocalize " @click="startDrawing('localize')">
+          {{ $t("navigation.localize.btn") }}
+        </v-btn>
+        <v-btn class="mx-1" color="grey-800" variant="outlined" @click="changeCameraFeedStatus">
+          <v-icon>mdi-camera</v-icon>
+        </v-btn>
 
-  </VRow>
-  <v-row class="bottom-div">
-    <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table"
-      :headers="map_headers" :items="map_points">
-      <template v-slot:item="{ item, index }">
-        <tr>
-          <td>{{ item.id }}</td>
-          <td>{{ item.x }}</td>
-          <td>{{ item.y }}</td>
-          <td>{{ item.theta }}</td>
-          <td>{{ item.label }}</td>
-          <!--td>
-            <v-btn class="mx-1" color="success" @click="commandWaypoint(item.x, item.y, item.theta)"><v-icon
-                size="large">mdi-forward</v-icon></v-btn>
-            <v-btn class="mx-1" color="error" @click="deletePoint(index)"><v-icon
-                size="large">mdi-delete</v-icon></v-btn>
-          </td-->
-          <td>
-            <v-btn class="mx-1" color="success" @click="driveToTarget(item.id)"><v-icon
-                size="large">mdi-forward</v-icon></v-btn>
-            <v-btn class="mx-1" color="error" @click="deleteTarget(item.id)"><v-icon
-                size="large">mdi-delete</v-icon></v-btn>
-          </td>
-        </tr>
-      </template>
-    </v-data-table>
-  </v-row>
+        <v-btn v-if="connected" color="error" variant="flat" :disabled="loading"
+          @click="stopNavigate(); disconnect();">{{ $t("navigation.disconnect") }}</v-btn>
+        <v-btn v-else color="success" variant="flat" :disabled="loading"
+          @click="startNavigate(); connect();">{{ $t("navigation.connect") }}</v-btn>
+      </VCol>
+    </VRow>
+    <VRow style="margin-bottom:200px">
+      <v-col sm="12" md="9">
+        <v-card>
+          <v-card-title>
+            <h4>{{ $t("navigation.robot-model") }}</h4>
+          </v-card-title>
+          <v-card-text>
+            <div class="text-center">
+              <div id="visualization-canvas"></div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col v-if="camera_feed" sm="12" md="4" class="position-absolute">
+        <v-responsive :aspect-ratio="16 / 9" class="border-lg border-primary bg-white h-100 w-100">
+          <v-sheet class="bg-white h-100 w-100 text-align: center">
+            <v-card height="100%">
+              <v-card-title>
+                <h4>{{ $t("navigation.camera") }}</h4>
+              </v-card-title>
+              <v-card-text>
+                <div class="text-center">
+                  <div id="divCamera"></div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-sheet>
+        </v-responsive>
+      </v-col>
+      <v-col sm="12" md="3" style="background-color:#dadbf1; min-height: 175px">
+        <v-card class="text-center">
+          <v-card-title>
+            <h4>{{ $t("navigation.joystick") }}</h4>
+          </v-card-title>
+          <v-card-text>
+            <hr>
+            <br>
+            <div id="dragstartzone" @mousedown="startDrag" @mousemove="doDrag" @mouseup="stopDrag">
+            </div>
+            <div id="dragCircle" :style="dragCircleStyle"></div>
+            <p>X: {{ joystick.vertical.toFixed(3) }}</p>
+            <p>Y: {{ joystick.horizontal.toFixed(3) }}</p>
+          </v-card-text>
+        </v-card>
+        <br>
+        <v-card>
+          <v-card-title class="text-center">
+            <h4>{{ $t("navigation.logs") }}</h4>
+          </v-card-title>
+          <v-card-text>
+            <p v-for="log in logs">{{ log }}</p>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+    </VRow>
+    <v-row class="bottom-div">
+      <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table"
+        :headers="headerLocale('map_headers')" :items="map_points">
+        <template v-slot:item="{ item, index }">
+          <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.x }}</td>
+            <td>{{ item.y }}</td>
+            <td>{{ item.theta }}</td>
+            <td>{{ item.label }}</td>
+            <!--td>
+              <v-btn class="mx-1" color="success" @click="commandWaypoint(item.x, item.y, item.theta)"><v-icon
+                  size="large">mdi-forward</v-icon></v-btn>
+              <v-btn class="mx-1" color="error" @click="deletePoint(index)"><v-icon
+                  size="large">mdi-delete</v-icon></v-btn>
+            </td-->
+            <td>
+              <v-btn class="mx-1" color="success" @click="driveToTarget(item.id)"><v-icon
+                  size="large">mdi-forward</v-icon></v-btn>
+              <v-btn class="mx-1" color="error" @click="deleteTarget(item.id)"><v-icon
+                  size="large">mdi-delete</v-icon></v-btn>
+            </td>
+          </tr>
+        </template>
+      </v-data-table>
+    </v-row>
+  </div>
   <v-dialog v-model="add_plan_dialog" max-width="700">
     <template v-slot:default="{ isActive }">
       <v-card rounded="lg">
         <v-card-title class="d-flex justify-space-between align-center">
           <div class="text-h5  ps-2">
-            Add Plan
+            {{ $t("navigation.add-plan.header") }}
           </div>
           <v-btn icon="mdi-close" variant="text" @click="isActive.value = false">
           </v-btn>
@@ -135,11 +149,11 @@
           <v-expansion-panels v-model="panel" multiple>
             <v-expansion-panel>
               <v-expansion-panel-title expand-icon="mdi-menu-down">
-                <h3>Route Plan</h3>
+                <h3>{{ $t("navigation.add-plan.route-plan") }}</h3>
               </v-expansion-panel-title>
               <v-expansion-panel-text>
                 <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table"
-                  :headers="add_plan_headers" :items="added_to_plan">
+                  :headers="headerLocale('add_plan_headers')" :items="added_to_plan">
                   <template v-slot:item="{ item, index }">
                     <tr>
                       <td>[{{ item.x }},{{ item.y }},{{ item.theta }}]</td>
@@ -164,11 +178,11 @@
 
             <v-expansion-panel>
               <v-expansion-panel-title expand-icon="mdi-menu-down">
-                <h3>Defined Poses</h3>
+                <h3>{{ $t("navigation.add-plan.defined-poses") }}</h3>
               </v-expansion-panel-title>
               <v-expansion-panel-text>
                 <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table"
-                  :headers="defined_poses_headers" :items="map_points">
+                  :headers="headerLocale('defined_poses_headers')" :items="map_points">
                   <template v-slot:item="{ item, index }">
                     <tr>
                       <td>[{{ item.x }},{{ item.y }},{{ item.theta }}]</td>
@@ -185,14 +199,14 @@
             </v-expansion-panel>
             <v-expansion-panel>
               <v-expansion-panel-title expand-icon="mdi-menu-down">
-                <h3>Sequence Mode</h3>
+                <h3>{{ $t("navigation.add-plan.sequence-mode") }}</h3>
 
               </v-expansion-panel-title>
               <v-expansion-panel-text>
                 <v-radio-group v-model="sequence_mode">
-                  <v-radio label="Single Run" value="1"></v-radio>
-                  <v-radio label="Loop Run" value="2"></v-radio>
-                  <v-radio label="Back and Forth" value="3"></v-radio>
+                  <v-radio :label="sequenceLocale('single')" value="1"></v-radio>
+                  <v-radio :label="sequenceLocale('loop')" value="2"></v-radio>
+                  <v-radio :label="sequenceLocale('bnf')" value="3"></v-radio>
                 </v-radio-group>
               </v-expansion-panel-text>
             </v-expansion-panel>
@@ -203,10 +217,13 @@
         <v-divider class="mt-2"></v-divider>
 
         <v-card-actions class="my-2 d-flex justify-end">
-          <v-btn class="text-none" rounded="xl" text="Discard" @click="isActive.value = false;"></v-btn>
+          <v-btn class="text-none" rounded="xl" text="" @click="isActive.value = false;">
+            {{ $t('navigation.add-plan.discard-btn') }}
+          </v-btn>
 
-          <v-btn class="text-none" color="primary" rounded="xl" text="Save" variant="flat"
-            @click="isActive.value = false"></v-btn>
+          <v-btn class="text-none" color="primary" rounded="xl" text="Save" variant="flat" @click="isActive.value = false">
+            {{ $t('navigation.add-plan.save-btn') }}
+          </v-btn>
         </v-card-actions>
       </v-card>
     </template>
@@ -215,10 +232,10 @@
     <v-card rounded="lg">
       <v-card-title class="d-flex justify-space-between align-center">
         <div v-if='startAddPoint' class="text-h5  ps-2">
-          Confirm Add Point
+          {{ $t("navigation.add-point.confirm.header") }}
         </div>
         <div v-else-if='startLocalize' class="text-h5  ps-2">
-          Confirm Localization Point
+          {{ $t("navigation.localize.confirm.header") }}
         </div>
         <v-btn icon="mdi-close" variant="text" @click="closeConfirmAddPoint()">
         </v-btn>
@@ -228,7 +245,7 @@
         <v-table>
           <tr>
             <th class="text-left">
-              X[m]
+              {{ $t("navigation.add-point.confirm.x") }}
             </th>
             <td>
               {{ addPointFinal.x }}
@@ -236,7 +253,7 @@
           </tr>
           <tr>
             <th class="text-left">
-              Y[m]
+              {{ $t("navigation.add-point.confirm.y") }}
             </th>
             <td>
               {{ addPointFinal.y }}
@@ -244,7 +261,7 @@
           </tr>
           <tr>
             <th class="text-left">
-              Theta[°]
+              {{ $t("navigation.add-point.confirm.theta") }}
             </th>
             <td>
               {{ addPointFinal.theta }}
@@ -252,7 +269,7 @@
           </tr>
           <tr v-if="startAddPoint">
             <th class="text-left">
-              Label
+              {{ $t("navigation.add-point.confirm.label") }}
             </th>
             <td>
               <v-text-field variant="outlined" density="compact" v-model="addPointFinal.label" hide-details>
@@ -265,10 +282,10 @@
       <v-divider class="mt-2"></v-divider>
 
       <v-card-actions class="my-2 d-flex justify-end">
-        <v-btn class="text-none" rounded="xl" text="Discard" @click="closeConfirmAddPoint()"></v-btn>
-
-        <v-btn class="text-none" color="primary" rounded="xl" text="Confirm" variant="flat"
-          @click="confirmAddPoint"></v-btn>
+        <v-btn class="text-none" rounded="xl" @click="closeConfirmAddPoint()">{{ $t("navigation.add-point.confirm.discard-btn") }}</v-btn>
+        <v-btn class="text-none" color="primary" rounded="xl" variant="flat" @click="confirmAddPoint">
+          {{ $t("navigation.add-point.confirm.confirm-btn") }}
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -277,7 +294,7 @@
 
     <template v-slot:actions>
       <v-btn variant="text" color="white" @click="snackbar.open = false">
-        Close
+        {{ $t("snackbar.close")}}
       </v-btn>
     </template>
   </v-snackbar>
@@ -316,36 +333,38 @@ import { ROSLIB, MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
 export default {
   data() {
     return {
+      //io_address: "http://192.168.1.14:8000",
+      //rosbridge_address: 'ws://192.168.1.14:9090',
+      //camera_port: '8080',
+      io_address: "http://124.244.207.24:8000",
+      rosbridge_address: 'ws://124.244.207.24:9090',
+      camera_port: '9080',
       snackbar: {
         open: false,
         message: "",
       },
       socket: null,
       sources: [
-        { label: "Local (192.xxx.xxx.xxx)", id: "local", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "Local (192.xxx.xxx.xxx)", id: "local", ros_address: 'ws://192.168.1.14:8090', camera_port: '8080' },
         { label: "Public (124.xxx.xxx.xxx)", id: "public", ros_address: 'ws://124.244.207.24:9090', camera_port: '9080' },
       ],
       maps: [
-        { label: "auto_saved_map_1679562901604", id: "auto_saved_map_1679562901604", ros_address: 'ws://124.244.207.24:9090', camera_port: '9080' },
-        { label: "auto_saved_map_1689923898047", id: "auto_saved_map_1689923898047", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "auto_saved_map_1690446338804", id: "auto_saved_map_1690446338804", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "auto_saved_map_1690798019130", id: "auto_saved_map_1690798019130", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "auto_saved_map_1690955612584", id: "auto_saved_map_1690955612584", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "auto_saved_map_1721468599919", id: "auto_saved_map_1721468599919", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "auto_saved_map_1721492024958", id: "auto_saved_map_1721492024958", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "auto_saved_map_1721493300849", id: "auto_saved_map_1721493300849", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "auto_saved_map_1721501729301", id: "auto_saved_map_1721502118988", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "auto_saved_map_1721502445020", id: "auto_saved_map_1721502445020", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "auto_saved_map_1721503947365", id: "auto_saved_map_1721503947365", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
         { label: "bookstore", id: "bookstore", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
         { label: "Mp2", id: "Mp2", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
         { label: "Mp3", id: "Mp3", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
         { label: "Mp4", id: "Mp4", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
         { label: "Mp55", id: "Mp55", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "Mp6", id: "Mp6", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "Mp7", id: "Mp7", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "mp8", id: "mp8", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "test4", id: "test4", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
+        { label: "test5", id: "test5", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
 
       ],
       ros_source: 'local',
-      map_select: null,
+      map_select: '',
+      slam_stopped: true,
+      slam_filename : "",
       map_label: "",
       camera_feed: false,
       add_plan_dialog: false,
@@ -357,15 +376,33 @@ export default {
         { title: 'Label', key: 'label' },
         { title: 'Actions', key: 'actions' },
       ],
+      map_headers_ch: [
+        { title: 'ID', key: 'id' },
+        { title: 'X[m]', key: 'x' },
+        { title: 'Y[m]', key: 'y' },
+        { title: 'Theta[°]', key: 'theta' },
+        { title: '标记', key: 'label' },
+        { title: '操作', key: 'actions' },
+      ],
       add_plan_headers: [
         { title: 'Pose[x,y,theta]', key: 'pose' },
         { title: 'Label', key: 'label' },
         { title: 'Edit', key: 'actions' },
       ],
+      add_plan_headers_ch: [
+        { title: '位置[x,y,theta]', key: 'pose' },
+        { title: '标记', key: 'label' },
+        { title: '编辑', key: 'actions' },
+      ],
       defined_poses_headers: [
         { title: 'Pose[x,y,theta]', key: 'pose' },
         { title: 'Label', key: 'label' },
         { title: 'Add to Route', key: 'actions' },
+      ],
+      defined_poses_headers_ch: [
+        { title: '位置[x,y,theta]', key: 'pose' },
+        { title: '标记', key: 'label' },
+        { title: '添加至路线', key: 'actions' },
       ],
       confirmAddPointDialog: false,
       startAddPoint: false,
@@ -451,10 +488,7 @@ export default {
       connected: false,
       ros: null,
       logs: [],
-      loading: false,
-      rosbridge_address: 'ws://192.168.1.14:9090',
-      port: '9090',
-      camera_port: '8080',
+      loading: true,
       dragging: false,
       navigating: false,
       x: 'no',
@@ -507,11 +541,17 @@ export default {
     }
   },
   mounted() {
+    var self = this;
     this.interval = setInterval(() => {     // to keep the connection alive
       if (this.ros != null && this.ros.inConnected) {
         this.ros.getNodes((data) => { }, (error) => { })
       }
     }, 10000);
+    setTimeout(function(){
+      console.log("E");
+      self.startNavigate();
+      self.connect();
+    },2000);
   },
   unmounted() {
     var self = this;
@@ -521,6 +561,36 @@ export default {
     //this.ros.close()
   },
   methods: {
+    headerLocale(headers){
+      var self = this;
+      if(headers=='select_map'){
+        return self.$t('navigation.select-map');
+      }
+      if(headers=='map_headers'){
+        if(self.$i18n.locale=='zh') return self.map_headers_ch;
+        else return self.map_headers;
+      }
+      if(headers=='add_plan_headers'){
+        if(self.$i18n.locale=='zh') return self.add_plan_headers_ch;
+        else return self.add_plan_headers_headers;
+      }
+      if(headers=='defined_poses_headers'){
+        if(self.$i18n.locale=='zh') return self.defined_poses_headers_ch;
+        else return self.defined_poses_headers_headers;
+      }
+    },
+    sequenceLocale(mode){
+      var self = this;
+      if(mode=='single'){
+        return self.$t('navigation.add-plan.single-run');
+      }
+      if(mode=='loop'){
+        return self.$t('navigation.add-plan.loop-run');
+      }
+      if(mode=='bnf'){
+        return self.$t('navigation.add-plan.back-and-forth');
+      }
+    },
     changeCameraFeedStatus() {
       var self = this;
       if (self.camera_feed == false) {
@@ -564,11 +634,11 @@ export default {
     startDrawing(type) {
       if(type=='add_point'){
         this.startAddPoint = true;
-        this.snackbar.message = "You are Adding Point ...";
+        this.snackbar.message = this.$t("navigation.add-point.location-message");
       }
       else if(type=='localize'){
         this.startLocalize = true;
-        this.snackbar.message = "You are localizing robot ...";
+        this.snackbar.message = this.$t("navigation.localize.location-message");
       }
       this.snackbar.open = true;
       this.unsetCamera();
@@ -583,7 +653,10 @@ export default {
           self.selectStartPoint = true;
           self.showOverlay = true;
           self.snackbar.open = false;
-          self.snackbar.message = "Point location is selected. Please select direction.";
+          if (self.startAddPoint)
+            self.snackbar.message = this.$t("navigation.add-point.direction-message");
+          else if(self.startLocalize)
+            self.snackbar.message = this.$t("navigation.localize.direction-message");
           self.snackbar.open = true;
         }
         else if (self.selectEndPoint == false) {
@@ -635,7 +708,7 @@ export default {
           theta: self.addPointFinal.theta
         });
         self.snackbar.open = true;
-        self.snackbar.message = "New point is added.";
+        self.snackbar.message = self.$t("navigation.add-point.confirm.new-point-message");
       }
       else if(self.startLocalize){
         let robot_pose = {
@@ -700,48 +773,88 @@ export default {
     startNavigate() {
       var self = this;
       let map_name = self.map_select;
-      if (map_name != null && map_name.trim() != "") {
+      self.socket = io(self.io_address);
+      self.socket.on('connect', function () {
+        console.log('Connected to the server');
+        if (map_name == null || map_name.trim() == "") {
+          self.socket.emit('get_current_config', 'STATIC');
+        }     
+        else {
+          self.map_settings = {
+            map_static: true,
+            map_slam: false,
+            map_file: map_name,
+            map_autosave: false
+          }
+          self.socket.emit('start_navigate', self.map_settings);
+        }
+      });
+      self.socket.on('disconnect', function () {
+        console.log('Disconnected from the server');
+      });
+      self.socket.on('navigate_slam_unsave', function (filename) {
+        console.log("A");
+        self.socket.disconnect();
+        self.disconnect();
+        self.slam_stopped = false;
+        self.slam_filename = filename;
+      });
+      self.socket.on('navigate_slam_save', function (filename) {
+        console.log("B");
+        self.slam_stopped = true;
+        self.map_select = filename.split(".yaml")[0];
         self.map_settings = {
           map_static: true,
           map_slam: false,
-          map_file: map_name,
+          map_file: self.map_select,
           map_autosave: false
-        }
-        self.socket = io("http://192.168.1.14:8000");
-        //self.socket = io("http://124.244.207.24:8000");
-        self.socket.on('connect', function () {
-          console.log('Connected to the server');
-          self.socket.emit('start_navigate', self.map_settings);
-        });
-        self.socket.on('disconnect', function () {
-          console.log('Disconnected from the server');
-        });
-        self.socket.on('map_navigate', function (message) {
-          console.log(message);
-        });
-        self.socket.on('map_stopped', function (message) {
-          console.log(message);
-          self.socket.disconnect();
-          self.disconnect();
-        });
-        self.socket.on('map_saved', function (message) {
-          console.log(message);
-        });
-        self.socket.on('get_targets', function (targets){
-          console.log(targets);
-          self.map_points = targets;
-        });
-        self.socket.on('localized', function (message){
-          self.start
-          console.log(message);
-          self.snackbar.message = message;
-          self.snackbar.open = true;
-        });
-      }
-      else {
+        };
+        self.socket.emit('start_navigate', self.map_settings);
+      });
+      self.socket.on('navigate_static_no_file', function (filename) {
+        console.log("C");
+        //
+      });
+      self.socket.on('navigate_static_have_file', function (filename) {
+        console.log("D");
+        self.slam_stopped = true;
+        self.map_select = filename.split(".yaml")[0];
+        self.map_settings = {
+          map_static: true,
+          map_slam: false,
+          map_file: self.map_select,
+          map_autosave: false
+        };
+        self.socket.emit('start_navigate', self.map_settings);
+      });
+      self.socket.on('map_navigate', function (message) {
+        console.log(message);
+      });
+      self.socket.on('map_stopped', function (message) {
+        console.log(message);
+        self.socket.disconnect();
+        self.disconnect();
+      });
+      self.socket.on('map_saved', function (message) {
+        console.log(message);
+      });
+      self.socket.on('get_targets', function (targets){
+        console.log(targets);
+        self.map_points = targets;
+      });
+      self.socket.on('localized', function (message){
+        self.start
+        console.log(message);
+        self.snackbar.message = message;
         self.snackbar.open = true;
-        self.snackbar.message = "Please select a map!";
-      }
+      });
+      self.socket.on('map_file_list', function (map_names) {
+        console.log(map_names);
+        self.maps = map_names.map(item => ({
+          label: item,
+          id: item
+        }));
+      });
     },
     stopNavigate() {
       var self = this;
@@ -750,7 +863,7 @@ export default {
     connect: function () {
       var self = this;
       let map_name = self.map_select;
-      if (map_name != null && map_name.trim() != "") {
+      if (1) {
         this.loading = true
         this.ros = new ROSLIB.Ros({
           url: this.rosbridge_address

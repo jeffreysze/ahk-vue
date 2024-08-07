@@ -57,7 +57,70 @@ const upgradeBanner = computed(() => {
       </div>
     </template>
 
-    <template #vertical-nav-content>
+
+  <!-- SideNav when showing Simplified Chinese -->
+
+    <template #vertical-nav-content v-if="$i18n.locale=='zh'">
+      <VerticalNavLink
+        :item="{
+          title: '仪表板',
+          icon: 'bx-home',
+          to: '/dashboard',
+        }"
+      />
+      <VerticalNavLink
+        :item="{
+          title: '创建地图',
+          icon: 'mdi-plus-box-multiple',
+          to: '/create-map',
+        }"
+      />
+      <VerticalNavLink
+        :item="{
+          title: '导航',
+          icon: 'mdi-map-marker-multiple',
+          to: '/navigation',
+        }"
+      />
+      <VerticalNavLink
+        :item="{
+          title: 'AI聊天机器人',
+          icon: 'mdi-message-processing',
+          to: '/chatbot',
+        }"
+      />
+      <VerticalNavLink
+        :item="{
+          title: '时间表',
+          icon: 'mdi-timetable',
+          to: '/timetable',
+        }"
+      />
+
+      <!-- 👉 Pages -->
+      <VerticalNavSectionTitle
+        :item="{
+          heading: '授权',
+        }"
+      />
+      <VerticalNavLink
+        :item="{
+          title: '登录',
+          icon: 'bx-log-in',
+          to: '/login',
+        }"
+      />
+      <VerticalNavLink
+        :item="{
+          title: '注册',
+          icon: 'bx-user-plus',
+          to: '/register',
+        }"
+      />
+    </template>
+
+  <!-- SideNav when NOT showing Simplified Chinese -->
+    <template #vertical-nav-content v-else>
       <VerticalNavLink
         :item="{
           title: 'Dashboard',
@@ -114,55 +177,6 @@ const upgradeBanner = computed(() => {
           to: '/register',
         }"
       />
-      <!--VerticalNavLink
-        :item="{
-          title: 'Error',
-          icon: 'bx-info-circle',
-          to: '/no-existence',
-        }"
-      /-->
-
-      <!-- 👉 User Interface -->
-      <!--VerticalNavSectionTitle
-        :item="{
-          heading: 'User Interface',
-        }"
-      />
-      <VerticalNavLink
-        :item="{
-          title: 'Typography',
-          icon: 'mdi-alpha-t-box-outline',
-          to: '/typography',
-        }"
-      />
-      <VerticalNavLink
-        :item="{
-          title: 'Icons',
-          icon: 'bx-show',
-          to: '/icons',
-        }"
-      />
-      <VerticalNavLink
-        :item="{
-          title: 'Cards',
-          icon: 'bx-credit-card',
-          to: '/cards',
-        }"
-      />
-      <VerticalNavLink
-        :item="{
-          title: 'Tables',
-          icon: 'bx-table',
-          to: '/tables',
-        }"
-      />
-      <VerticalNavLink
-        :item="{
-          title: 'Form Layouts',
-          icon: 'mdi-form-select',
-          to: '/form-layouts',
-        }"
-      /-->
     </template>
 
 
@@ -175,6 +189,19 @@ const upgradeBanner = computed(() => {
     </template>
   </VerticalNavLayout>
 </template>
+<script>
+export default {
+  data() {
+    return {
+      sideBar: {
+
+      }
+    }
+  }
+}
+</script>
+
+
 
 <style lang="scss" scoped>
 .meta-key {

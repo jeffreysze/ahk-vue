@@ -1,0 +1,65 @@
+{
+  "snackbar":{
+    "close": "关闭"
+  },
+  "create-map": {
+    "start-mapping": "开始测绘地图",
+    "save-and-stop-mapping": "保存并停止测绘",
+    "camera": "相机图像",
+    "create-map": "创建地图",
+    "joystick": "操纵摇杆",
+    "logs": "连接日志"
+  },
+  "navigation": {
+    "select-map": "选择地图",
+    "camera": "相机图像",
+    "add-point": {
+      "btn": "添加记录点",
+      "location-message": "您正在添加新的记录点...",
+      "direction-message": "记录点位置已选定。请选择方向...",
+      "confirm": {
+        "header": "确认添加记录点",
+        "x": "X[m]",
+        "y": "Y[m]",
+        "theta": "Theta[°]",
+        "label": "标记",
+        "discard-btn": "舍弃",
+        "confirm-btn": "确认",
+        "new-point-message": "新记录点添加成功"
+      }
+    },
+    "edit-point": "编辑记录点",
+    "add-plan": {
+      "btn": "添加方案",
+      "header": "添加方案",
+      "route-plan": "路线规划",
+      "defined-poses": "已定义位置",
+      "sequence-mode": "运行模式",
+      "single-run": "单次",
+      "loop-run": "循环",
+      "back-and-forth": "来回",
+      "discard-btn": "舍弃",
+      "save-btn": "保存"
+    },
+    "localize": {
+      "btn":"定位",
+      "location-message": "您正在为机器人重新定位...",
+      "direction-message": "定位位置已选定。请选择方向...",
+      "confirm": {
+        "header": "确认定位位置",
+        "x": "X[m]",
+        "y": "Y[m]",
+        "theta": "Theta[°]",
+        "label": "标记",
+        "discard-btn": "舍弃",
+        "confirm-btn": "确认",
+        "new-point-message": "新记录点添加成功"
+      }
+    },
+    "connect": "连接",
+    "disconnect": "断开连接",
+    "robot-model": "机器人模型",
+    "joystick": "操纵摇杆",
+    "logs": "连接日志"
+  }
+}

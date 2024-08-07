@@ -1,17 +1,17 @@
 <template>  
   <div class="ma-2">
-  <v-btn v-if="mapping==false || socket_connected==false" color="secondary" density="comfortable" @click="startMapping()">Start Mapping <v-icon>mdi-play-circle</v-icon></v-btn>
+  <v-btn v-if="mapping==false || socket_connected==false" class='mr-3' color="secondary" density="comfortable" :disabled="loading" @click="startMapping()">{{ $t("create-map.start-mapping") }}<v-icon>mdi-play-circle</v-icon></v-btn>
   <!--v-btn v-if="mapping==true" color="error" density="comfortable" @click="stopMapping()">Stop Mapping <v-icon>mdi-stop-circle</v-icon></v-btn-->
-  <v-btn v-if="mapping==true && socket_connected==true" class="mx-3" color="error" @click="saveMap()">Save & Stop Mapping  <v-icon>mdi-floppy</v-icon></v-btn>
+  <v-btn v-if="mapping==true && socket_connected==true" class="mr-3" color="error" @click="saveMap()">{{ $t("create-map.save-and-stop-mapping") }}<v-icon>mdi-floppy</v-icon></v-btn>
   <v-btn class="mx-1" color="grey-800" variant="outlined" density="comfortable" @click="changeCameraFeedStatus">
     <v-icon>mdi-camera</v-icon>
   </v-btn>
   </div>
-  <VRow v-if="mapping==true" style="margin-bottom:200px">
+  <VRow v-if="1" style="margin-bottom:200px">
     <v-col sm="12" md="9">
       <v-card>
         <v-card-title>
-          <h4>Create Map</h4>
+          <h4>{{ $t("create-map.create-map") }}: {{ map_name }}</h4>
         </v-card-title>
         <v-card-text>
           <div class="text-center">
@@ -25,7 +25,7 @@
         <v-sheet class="bg-white h-100 w-100 text-align: center">
           <v-card height="100%">
             <v-card-title>
-              <h4>Camera</h4>
+              <h4>{{ $t("create-map.camera") }}</h4>
             </v-card-title>
             <v-card-text>
               <div class="text-center">
@@ -39,7 +39,7 @@
     <v-col sm="12" md="3" style="background-color:#dadbf1; min-height: 175px">
       <v-card class="text-center">
         <v-card-title>
-          <h4>Joystick</h4>
+          <h4>{{ $t("create-map.joystick") }}</h4>
         </v-card-title>
         <v-card-text>
           <hr>
@@ -54,7 +54,7 @@
       <br>
       <v-card>
         <v-card-title class="text-center">
-          <h4>Logs</h4>
+          <h4>{{ $t("create-map.logs") }}</h4>
         </v-card-title>
         <v-card-text>
           <p v-for="log in logs">{{ log }}</p>
@@ -63,6 +63,16 @@
     </v-col>
 
   </VRow>
+
+  <v-snackbar v-model="snackbar.open" color="primary">
+    <p>{{ snackbar.message }}</p>
+
+    <template v-slot:actions>
+      <v-btn variant="text" color="white" @click="snackbar.open = false">
+        Close
+      </v-btn>
+    </template>
+  </v-snackbar>
 </template>
 <script>
 import { io } from "socket.io-client";
@@ -70,9 +80,20 @@ import { ROSLIB, MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
 export default {
   data() {
     return {
+      //io_address: "http://192.168.1.14:8000",
+      //rosbridge_address: 'ws://192.168.1.14:9090',
+      //camera_port: '8080',
+      io_address: "http://124.244.207.24:8000",
+      rosbridge_address: 'ws://124.244.207.24:9090',
+      camera_port: '9080',
+      snackbar: {
+        open: false,
+        message: "",
+      },
       socket_connected: false,
       socket: null,
-      mapping: false,
+      mapping: true,
+      map_name: null,
       map_settings: {},
       camera_feed: false,
       panel: [0,1,2],
@@ -82,11 +103,7 @@ export default {
       connected: false,
       ros: null,
       logs: [],
-      loading: false,
-      rosbridge_address: 'ws://192.168.1.14:9090',
-      //rosbridge_address: 'ws://124.244.207.24:9090',
-      port: '9090',
-      camera_port: '8080',
+      loading: true,
       dragging: false,
       navigating: false,
       x: 'no',
@@ -139,11 +156,16 @@ export default {
     }
   },
   mounted(){
+    var self = this;
+    
     this.interval = setInterval(() => {     // to keep the connection alive
       if (this.ros != null && this.ros.inConnected) {
         this.ros.getNodes((data) => { }, (error) => { })
       }
     }, 10000);
+    setTimeout(function(){
+      self.startMapping();
+    },1000);
   },
   unmounted() {
     var self = this;
@@ -173,27 +195,60 @@ export default {
     },
     startMapping(){
       var self = this;
-      var map_name = prompt('Your Question');
-      if(map_name!=null && map_name.trim()!=""){
+      //var map_name = prompt('Please input name for new map:');
+      //if(map_name!=null && map_name.trim()!=""){
         self.mapping = true;
-        self.map_settings = {
-          map_static: false,
-          map_slam: true,
-          map_file: map_name,
-          map_autosave: false
-        }
-        self.socket = io("http://192.168.1.14:8000");
-        //self.socket = io("http://124.244.207.24:8000");
+       // self.map_settings = {
+       //   map_static: false,
+       //   map_slam: true,
+       //   map_file: map_name,
+       //   map_autosave: false
+       // }
+
+        self.connect();
+        self.socket = io(self.io_address);
         self.socket.on('connect', function() {
           console.log('Connected to the server');
           self.socket_connected = true;
-          self.socket.emit('start_mapping', self.map_settings);
+          self.socket.emit('get_current_config', 'SLAM');
+          //self.socket.emit('start_mapping', self.map_settings);
         });
         self.socket.on('disconnect', function() {
           console.log('Disconnected from the server');
         });
+        self.socket.on('create_slam_unsave', function(filename){
+          self.mapping = true;
+          self.snackbar.message = "Continuing SLAM with map name: " + '"'+filename+'"';
+          self.map_name = filename.split(".yaml")[0];
+          self.snackbar.open = true;
+          self.map_settings = {
+            map_static: false,
+            map_slam: true,
+            map_file: self.map_name,
+            map_autosave: false
+          }
+        });
+        self.socket.on('can_create_new_map', function(filename){
+          let input_map_name = prompt('Please input name for new map:');
+          if(input_map_name!=null && input_map_name.trim()!=""){
+            self.map_name = input_map_name;
+            self.map_settings = {
+              map_static: false,
+              map_slam: true,
+              map_file: self.map_name,
+              map_autosave: false
+            }
+            self.socket.emit('start_mapping', self.map_settings);
+          }
+          else {
+            self.socket.disconnect();
+            self.disconnect();
+            self.mapping = false;
+          }
+        });
         self.socket.on('map_started', function(message) {
           console.log(message);
+          self.mapping = true;
         });
         self.socket.on('map_stopped', function(message) {
           console.log(message);
@@ -204,10 +259,10 @@ export default {
         self.socket.on('map_saved', function(message) {
           console.log(message);
         });
-        self.connect();
-      }
-      else {
-      }
+        //self.connect();
+      //}
+      //else {
+      //}
     },
     stopMapping(){
       var self = this;

@@ -41,10 +41,10 @@ export default {
           minute: '2-digit',
         },
         events: [          
-          { title: 'Event 1', start: '2024-07-22T00:30:00', end: '2024-07-22T08:00:00' },
-          { title: 'Event 2', start: '2024-07-23T01:00:00', end: '2024-07-23T09:00:00' },
-          { title: 'Event 3', start: '2024-07-24T01:00:00', end: '2024-07-24T09:00:00' },
-          { title: 'Event 4', allDay: true, start: '2024-07-25T14:30:00', end: '2024-07-25T18:00:00' }
+          { title: 'Event 1', start: '2024-08-05T00:30:00', end: '2024-08-05T08:00:00' },
+          { title: 'Event 2', start: '2024-08-06T01:00:00', end: '2024-08-06T09:00:00' },
+          { title: 'Event 3', start: '2024-08-07T01:00:00', end: '2024-08-07T09:00:00' },
+          { title: 'Event 4', allDay: true, start: '2024-08-08T14:30:00', end: '2024-08-08T18:00:00' }
         ]
       }
     }
