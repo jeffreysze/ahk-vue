@@ -61,5 +61,21 @@
     "robot-model": "机器人模型",
     "joystick": "操纵摇杆",
     "logs": "连接日志"
+  },
+  "timetable": {
+    "save_btn": "保存",
+    "discard_change_btn": "放弃更改",
+    "timetable-save-message": "时间表已保存!",
+    "dialog": {
+      "event_detail_header": "时段细节",
+      "edit_as_header": "编辑为:",
+      "edit_start": "开始:",
+      "edit_end": "结束:",
+      "delete_btn": "刪除",
+      "edit_btn": "编辑",
+      "close_btn": "关闭",
+      "discard_btn": "丢弃",
+      "confirm_btn": "确认"
+    }
   }
 }

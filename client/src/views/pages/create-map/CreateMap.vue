@@ -68,7 +68,7 @@
     <p>{{ snackbar.message }}</p>
 
     <template v-slot:actions>
-      <v-btn variant="text" color="white" @click="snackbar.open = false">
+      <v-btn color="white" variant="outlined" @click="snackbar.open = false">
         Close
       </v-btn>
     </template>

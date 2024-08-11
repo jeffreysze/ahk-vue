@@ -38,7 +38,7 @@ const upgradeBanner = computed(() => {
 
         <VSpacer />
 
-        <IconBtn
+        <!--IconBtn
           class="me-2"
           href="https://github.com/themeselection/sneat-vuetify-vuejs-admin-template-free"
           target="_blank"
@@ -53,7 +53,7 @@ const upgradeBanner = computed(() => {
 
         <NavbarThemeSwitcher class="me-2" />
 
-        <UserProfile />
+        <UserProfile /-->
       </div>
     </template>
 
@@ -61,13 +61,13 @@ const upgradeBanner = computed(() => {
   <!-- SideNav when showing Simplified Chinese -->
 
     <template #vertical-nav-content v-if="$i18n.locale=='zh'">
-      <VerticalNavLink
+      <!--VerticalNavLink
         :item="{
           title: '仪表板',
           icon: 'bx-home',
           to: '/dashboard',
         }"
-      />
+      /-->
       <VerticalNavLink
         :item="{
           title: '创建地图',
@@ -82,13 +82,13 @@ const upgradeBanner = computed(() => {
           to: '/navigation',
         }"
       />
-      <VerticalNavLink
+      <!--VerticalNavLink
         :item="{
           title: 'AI聊天机器人',
           icon: 'mdi-message-processing',
           to: '/chatbot',
         }"
-      />
+      /-->
       <VerticalNavLink
         :item="{
           title: '时间表',
@@ -98,7 +98,7 @@ const upgradeBanner = computed(() => {
       />
 
       <!-- 👉 Pages -->
-      <VerticalNavSectionTitle
+      <!--VerticalNavSectionTitle
         :item="{
           heading: '授权',
         }"
@@ -116,7 +116,7 @@ const upgradeBanner = computed(() => {
           icon: 'bx-user-plus',
           to: '/register',
         }"
-      />
+      /-->
     </template>
 
   <!-- SideNav when NOT showing Simplified Chinese -->
