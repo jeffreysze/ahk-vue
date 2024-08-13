@@ -152,6 +152,12 @@
                 <h3>{{ $t("navigation.add-plan.route-plan") }}</h3>
               </v-expansion-panel-title>
               <v-expansion-panel-text>
+                <v-row>
+                  <v-col>
+                    <v-btn class='mr-2 mb-1' color="primary" variant="outlined"><v-icon>mdi-plus </v-icon>Sleep</v-btn>
+                    <v-btn class='mr-2 mb-1' color="primary" variant="outlined"><v-icon>mdi-plus </v-icon>Motion</v-btn>
+                  </v-col>
+                </v-row>
                 <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table"
                   :headers="headerLocale('add_plan_headers')" :items="added_to_plan">
                   <template v-slot:item="{ item, index }">
@@ -333,12 +339,12 @@ import { ROSLIB, MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
 export default {
   data() {
     return {
-      //io_address: "http://192.168.1.14:8000",
-      //rosbridge_address: 'ws://192.168.1.14:9090',
-      //camera_port: '8080',
-      io_address: "http://124.244.207.24:8000",
-      rosbridge_address: 'ws://124.244.207.24:9090',
-      camera_port: '9080',
+      io_address: "http://192.168.1.14:8000",
+      rosbridge_address: 'ws://192.168.1.14:9090',
+      camera_port: '8080',
+      //io_address: "http://124.244.207.24:8000",
+      //rosbridge_address: 'ws://124.244.207.24:9090',
+      //camera_port: '9080',
       snackbar: {
         open: false,
         message: "",

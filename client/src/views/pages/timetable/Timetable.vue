@@ -13,6 +13,7 @@
       >
         <template v-slot:eventContent='arg'>
           <b>{{ arg.timeText }}</b>
+          <br>
           <i>{{ arg.event.title }}</i>
         </template>
       </FullCalendar>
@@ -22,7 +23,7 @@
   </div>
   <v-dialog
     v-model="dialog"
-    max-width="400"
+    max-width="450"
   >
     <v-card
     >
@@ -32,16 +33,20 @@
       <v-card-text>
         <table>
           <tr>
+            <th class="pr-3">{{ $t("timetable.dialog.edit_day") }}</th>
+            <td class="pr-3">{{ transalateWeekName(currentEvent.dayName) }}</td>
+          </tr>
+          <tr>
             <th class="pr-3">{{ $t("timetable.dialog.edit_start") }}</th>
-            <td class="pr-3">{{ transalateWeekName(currentEvent.startWeekName) }}, </td>
-            <!--td><v-text-field v-model="currentEvent.startTime" density="true" min-width="150px"></v-text-field></td-->
-            <td>{{ currentEvent.startTime}}</td>
+            <td>{{ currentEvent.start_time}}</td>
           </tr>
           <tr>
             <th class="pr-3">{{ $t("timetable.dialog.edit_end") }}</th>
-            <td class="pr-3">{{ transalateWeekName(currentEvent.endWeekName) }}, </td>
-            <!--td><v-text-field v-model="currentEvent.endTime" density="true"></v-text-field></td-->
-            <td>{{ currentEvent.endTime }}</td>
+            <td>{{ currentEvent.end_time }}</td>
+          </tr>
+          <tr>
+            <th class="pr-3">{{ $t("timetable.dialog.edit_title") }}</th>
+            <td class="pr-3" colspan="2">{{ currentEvent.title }}</td>
           </tr>
         </table>
       </v-card-text>
@@ -50,14 +55,23 @@
         <h3 class="mb-3">{{ $t("timetable.dialog.edit_as_header") }}</h3>
         <table>
           <tr>
+            <th class="pr-3">{{ $t("timetable.dialog.edit_day") }}</th>
+            <td class="pr-3">{{ transalateWeekName(currentEvent.dayName) }}</td>
+            <td></td>
+          </tr>
+          <tr>
             <th class="pr-3">{{ $t("timetable.dialog.edit_start") }}</th>
-            <td class="pr-3">{{ transalateWeekName(currentEvent.startWeekName) }}, </td>
-            <td><v-text-field v-model="currentEvent.editStartTime" density="compact" min-width="150px"></v-text-field></td>
+            <td><v-text-field v-model="currentEvent.edit_start_time" density="compact" max-width="150px"></v-text-field></td>
+            <td></td>
           </tr>
           <tr>
             <th class="pr-3">{{ $t("timetable.dialog.edit_end") }}</th>
-            <td class="pr-3">{{ transalateWeekName(currentEvent.endWeekName) }}, </td>
-            <td><v-text-field v-model="currentEvent.editEndTime" density="compact"></v-text-field></td>
+            <td><v-text-field v-model="currentEvent.edit_end_time" density="compact" max-width="150px"></v-text-field></td>
+            <td></td>
+          </tr>
+          <tr>
+            <th class="pr-3">{{ $t("timetable.dialog.edit_title") }}</th>
+            <td class="pr-3" colspan="2"><v-text-field v-model="currentEvent.edit_title" density="compact" min-width="300px"></v-text-field></td>
           </tr>
         </table>
       </v-card-text>
@@ -112,8 +126,8 @@ export default defineComponent({
   },
   data() {
     return {
-      //io_address: "http://124.244.207.24:8000",
-      io_address: "http://192.168.1.14:8000",
+      io_address: "http://124.244.207.24:8000",
+      //io_address: "http://192.168.1.14:8000",
       socket_connected: false,
       socket: null,
       snackbar: {
@@ -128,7 +142,9 @@ export default defineComponent({
         "2024-08-08",
         "2024-08-09",
         "2024-08-10",
+        "2024-08-11",
       ],
+      loop_save: false,
       edit_event: false,
       eventCount: 0,
       changes: false,
@@ -203,10 +219,9 @@ export default defineComponent({
       console.log('Disconnected from the server');
     });
     self.socket.on('emit_timetable_object', function(object) {
-      self.calendarOptions.events = object; // update the initialEvents array
+      self.changeTimetableToArray(object);
+      self.calendarOptions.events = self.currentEvents; // update the initialEvents array
       self.refetchEvents();
-      self.eventCount = self.calendarOptions.events.length;
-      self.currentEvents = object;
       console.log(self.currentEvents);
       //self.handleEvents(object);
     });
@@ -237,13 +252,15 @@ export default defineComponent({
       let calendarApi = selectInfo.view.calendar
       console.log(calendarApi)
       calendarApi.unselect() // clear date selection
+      console.log()
+      let tempTitle = prompt(self.$i18n.t("timetable.add-event-prompt"));
         self.eventCount+=1;
         calendarApi.addEvent({
           id: self.eventCount,
           start: selectInfo.startStr,
           end: selectInfo.endStr,
-          startWeekDayNumber: moment(selectInfo.startStr).format("e"),
-          endWeekDayNumber: moment(selectInfo.endStr).format("e"),
+          day: moment(selectInfo.startStr).format("e"),
+          title: tempTitle
         });
         self.currentEvents.push({
           id: self.eventCount,
@@ -251,24 +268,27 @@ export default defineComponent({
           end: selectInfo.endStr,
           start_time: moment(selectInfo.startStr).format("HH:mm"),
           end_time: moment(selectInfo.endStr).format("HH:mm"),
-          startWeekDayNumber: moment(selectInfo.startStr).format("e"),
-          endWeekDayNumber: moment(selectInfo.endStr).format("e"),
+          day: moment(selectInfo.startStr).format("e"),
+          title: tempTitle
         });
         self.changes = true;
+        console.log(self.currentEvents);
     },
     handleEventClick(clickInfo) {
       var self = this;
       console.log(clickInfo.event)
       self.currentEvent = {
         id: clickInfo.event.id,
-        startWeekDayNumber: moment(clickInfo.event.start).format("e"),
-        startWeekName: moment(clickInfo.event.start).format("dddd"),
-        startTime: moment(clickInfo.event.start).format("HH:mm"),
-        endWeekDayNumber: moment(clickInfo.event.end).format("e"),
-        endWeekName: moment(clickInfo.event.end).format("dddd"),
-        endTime: moment(clickInfo.event.end).format("HH:mm"),
-        editStartTime: moment(clickInfo.event.start).format("HH:mm"),
-        editEndTime: moment(clickInfo.event.end).format("HH:mm"),
+        start: moment(clickInfo.event.start).format("YYYY-MM-DDTHH:mm:ss"),
+        end: moment(clickInfo.event.end).format("YYYY-MM-DDTHH:mm:ss"),
+        day: moment(clickInfo.event.start).format("e"),
+        dayName: moment(clickInfo.event.start).format("dddd"),
+        title: clickInfo.event.title,
+        start_time: moment(clickInfo.event.start).format("HH:mm"),
+        end_time: moment(clickInfo.event.end).format("HH:mm"),
+        edit_start_time: moment(clickInfo.event.start).format("HH:mm"),
+        edit_end_time: moment(clickInfo.event.end).format("HH:mm"),
+        edit_title: clickInfo.event.title,
       };
       console.log(self.currentEvent)
       
@@ -319,14 +339,19 @@ export default defineComponent({
     confirmEditEvent(){
       var self = this;
       //check Valid later;
-      let tempStart = moment(self.weekToDate[self.currentEvent.startWeekDayNumber] + "T" + self.currentEvent.editStartTime + ":00");
-      let tempEnd = moment(self.weekToDate[self.currentEvent.endWeekDayNumber] + "T" + self.currentEvent.editEndTime + ":00");
+      let tempStart = moment(self.weekToDate[self.currentEvent.day] + "T" + self.currentEvent.edit_start_time + ":00");      
+      let tempEnd = ""
+      if(self.currentEvent.edit_end_time == "00:00")
+        tempEnd = moment(self.weekToDate[parseInt(self.currentEvent.day)+1] + "T" + self.currentEvent.edit_end_time + ":00");
+      else 
+        tempEnd = moment(self.weekToDate[self.currentEvent.day] + "T" + self.currentEvent.edit_end_time + ":00");
       if(tempEnd.diff(tempStart,'minutes') <1){
         alert("Time period invalid.");
       }
       else {
         self.updateEventList('edit');
         self.changes = true;
+        self.edit_event = false;
       }
     },
     deleteEvent(){
@@ -340,14 +365,18 @@ export default defineComponent({
       for (var i = 0; i < self.currentEvents.length; i++) {
         if (self.currentEvents[i].id == self.currentEvent.id) {
           if(type=='edit'){
-            let tempStart = self.weekToDate[self.currentEvent.startWeekDayNumber] + "T" + self.currentEvent.editStartTime + ":00";
-            let tempEnd = self.weekToDate[self.currentEvent.endWeekDayNumber] + "T" + self.currentEvent.editEndTime + ":00";
-            console.log(self.currentEvent.startWeekDayNumber,self.currentEvent.endWeekDayNumber,tempStart,tempEnd);
+            let tempStart = self.weekToDate[self.currentEvent.day] + "T" + self.currentEvent.edit_start_time + ":00";
+            let tempEnd = ""
+            if(self.currentEvent.edit_end_time == "00:00")
+              tempEnd = moment(self.weekToDate[parseInt(self.currentEvent.day)+1] + "T" + self.currentEvent.edit_end_time + ":00");
+            else 
+              tempEnd = moment(self.weekToDate[self.currentEvent.day] + "T" + self.currentEvent.edit_end_time + ":00");
             self.currentEvents[i].start = moment(tempStart).format("YYYY-MM-DDTHH:mm:ss");
             self.currentEvents[i].end = moment(tempEnd).format("YYYY-MM-DDTHH:mm:ss");
             self.currentEvents[i].start_time = moment(tempStart).format("HH:mm");
             self.currentEvents[i].end_time = moment(tempEnd).format("HH:mm");
-            console.log(self.currentEvents);
+            self.currentEvents[i].title = self.currentEvent.edit_title;
+            console.log(self.currentEvents[i]);
           }
           else if(type=='delete'){
             self.currentEvents.splice(i, 1);
@@ -355,10 +384,10 @@ export default defineComponent({
           else if(type=='drop' || type=='resize'){
             self.currentEvents[i].start = self.currentEvent.start;
             self.currentEvents[i].end = self.currentEvent.end;
-            self.currentEvents[i].startWeekDayNumber = moment(self.currentEvent.start).format("e");
-            self.currentEvents[i].endWeekDayNumber = moment(self.currentEvent.end).format("e");
+            self.currentEvents[i].day = moment(self.currentEvent.start).format("e");
             self.currentEvents[i].start_time = moment(self.currentEvent.start).format("HH:mm");
             self.currentEvents[i].end_time = moment(self.currentEvent.end).format("HH:mm");
+            console.log(self.currentEvents[i])
           }
           
           self.calendarOptions.events = self.currentEvents; // update the initialEvents array
@@ -375,8 +404,16 @@ export default defineComponent({
     },
     saveTimetable(){
       var self = this;
-      self.socket.emit('save_timetable', self.currentEvents);
-      console.log(self.currentEvents);
+      self.loop_save = true;
+      let json = self.changeArrayToJSON(self.currentEvents);
+      let intv = setInterval(function(){
+        if(self.loop_save ==false){
+          self.socket.emit('save_timetable', json);
+          clearInterval(intv);
+        }
+      },500);
+      
+      //self.socket.emit('save_timetable', self.currentEvents);
     },
     discardAllEventChange(){
       var self = this;      
@@ -431,7 +468,85 @@ export default defineComponent({
           break;
           // code block
       }
-    }
+    },
+    changeTimetableToArray(object){
+      var self = this;
+      self.eventCount = 0;
+      self.currentEvents = [];
+      self.currentEvent = null;
+      for (var i = 0; i < object.week.length; i++) {
+        let day = object.week[i].day;
+        for (var j = 0; j<object.week[i].timetable.length; j++){
+          let event = object.week[i].timetable[j];
+          let event_end_day = "";
+          if(event.end_time=='00:00')
+            event_end_day = self.weekToDate[day+1]+"T"+event.end_time+":00";
+          else
+            event_end_day = self.weekToDate[day]+"T"+event.end_time+":00";
+          self.currentEvents.push({
+            id: ++self.eventCount,
+            start_time: event.start_time,
+            end_time: event.end_time,
+            day: day,
+            start: self.weekToDate[day]+"T"+event.start_time+":00",
+            end: event_end_day,
+            title: event.event
+          });
+        }
+      }
+    },
+    changeArrayToJSON(events){
+      var self = this;
+      let json = {
+        "week":
+          [
+            {
+              "day":0,
+              "timetable":[]
+            },
+            {
+              "day":1,
+              "timetable":[]
+            },
+            {
+              "day":2,
+              "timetable":[]
+            },
+            {
+              "day":3,
+              "timetable":[]
+            },
+            {
+              "day":4,
+              "timetable":[]
+            },
+            {
+              "day":5,
+              "timetable":[]
+            },
+            {
+              "day":6,
+              "timetable":[]
+            }
+          ]
+        }
+      for (var i = 0; i < events.length; i++) {
+        let event = {
+          "start_time": events[i].start_time,
+          "end_time": events[i].end_time,
+          "event": events[i].title,
+        };
+        for(var j = 0; j < json.week.length; j++){
+          if(json.week[j].day == parseInt(events[i].day)){         
+            json.week[j].timetable.push(event);
+            if( parseInt(i) == parseInt(events.length)-1){
+              self.loop_save = false;              
+              return json;                            
+            }
+          }
+        }        
+      }
+    },
   }
 })
 
