@@ -80,12 +80,12 @@ import { ROSLIB, MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
 export default {
   data() {
     return {
-      //io_address: "http://192.168.1.14:8000",
-      //rosbridge_address: 'ws://192.168.1.14:9090',
-      //camera_port: '8080',
-      io_address: "http://124.244.207.24:8000",
-      rosbridge_address: 'ws://124.244.207.24:9090',
-      camera_port: '9080',
+      io_address: "http://192.168.1.14:8000",
+      rosbridge_address: 'ws://192.168.1.14:9090',
+      camera_port: '8080',
+      //io_address: "http://124.244.207.24:8000",
+      //rosbridge_address: 'ws://124.244.207.24:9090',
+      //camera_port: '9080',
       snackbar: {
         open: false,
         message: "",

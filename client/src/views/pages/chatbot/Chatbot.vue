@@ -37,7 +37,7 @@
         <v-responsive v-if="activeChat" class="overflow-y-hidden fill-height" height="500">
           <v-card flat class="d-flex flex-column fill-height">
             <v-card-title>
-              AI Chatbot
+              AI聊天机器人
             </v-card-title>
             <v-card-text class="flex-grow-1 overflow-y-auto">
               <template v-for="(msg, i) in messages">
@@ -47,8 +47,8 @@
                       <v-hover v-slot:default="{ hover }">
                         <v-chip :color="msg.me ? 'primary' : ''" dark style="height:auto;white-space: normal;"
                           class="pa-4 mb-2" v-on="on">
-                          {{ msg.content }}
-                          <sub class="ml-2" style="font-size: 0.5rem;">{{ msg.created_at }}</sub>
+                          <h3>{{ msg.content }}</h3>
+                          <sub class="ml-2" style=""><h4>{{ msg.created_at }}</h4></sub>
                           <v-icon v-if="hover" small>
                             expand_more
                           </v-icon>
@@ -65,7 +65,7 @@
               </template>
             </v-card-text>
             <v-card-text class="flex-shrink-1">
-              <v-text-field v-model="messageForm.content" label="type a message" type="text" no-details outlined
+              <v-text-field v-model="messageForm.content" label="输入信息" type="text" no-details outlined
                 append-outer-icon="send" @keyup.enter="messages.push(messageForm)"
                 @click:append-outer="messages.push(messageForm)" hide-details />
             </v-card-text>
@@ -149,41 +149,41 @@ export default {
       ],
       messages: [
         {
-          content: "Hello, is there a security robot available?",
+          content: "你好，请问有空闲安保机器人吗？",
           me: true,
           created_at: "11:11am"
         },
         {
-          content: "Yes, I'm here to assist you. How can I help you with security?",
+          content: "是的，我是来帮助你的。在安保方面我能为您提供什么帮助？",
           me: false,
           created_at: "11:11am"
         },
         {
-          content: "I'm concerned about the security of my home. What measures can I take to enhance it?",
+          content: "我很担心家里的安全。我可以采取什么措施来增强安保？",
           me: true,
           created_at: "11:11am"
         },
         {
-          content: "Here are some general security tips for your home:",
+          content: "以下是一些针对您家居的一般安全提示：",
           me: false,
           created_at: "11:11am"
         },
         {
-          content: "Here are some general security tips for your home: \
-                    1. Install a reliable security system with cameras and sensors. \
-                    2. Ensure all doors and windows are properly locked, including using deadbolts. \
-                    3. Consider reinforcing entry points with stronger materials, such as solid doors and shatter-resistant glass. \
-                    4. Use outdoor lighting and motion sensors to deter potential intruders.",
+          content: "以下是一些适用于您家庭的一般安全提示： \
+                    1. 安装带有摄像头和传感器的可靠安全系统。 \
+                    2. 确保所有门窗均已正确锁定，包括使用门闩。 \
+                    3. 考虑使用更坚固的材料加固入口点，例如实心门和防碎玻璃。 \
+                    4. 使用户外照明和运动传感器来阻止潜在的入侵者。",
           me: false,
           created_at: "11:11am"
         },
         {
-          content: "Thank you for the tips! I'll make sure to implement them to improve the security of my home.",
+          content: "谢谢你的建议！我会实施这些建议来提高我家的安全性。",
           me: true,
           created_at: "11:11am"
         },
         {
-          content: "You're welcome! I'm glad I could help. If you have any more questions or need further assistance, feel free to ask. Stay safe!",
+          content: "不用客气！我很高兴能帮到您。如果您还有其他问题或需要进一步帮助，请随时询问。注意安全！",
           me: false,
           created_at: "11:12am"
         },

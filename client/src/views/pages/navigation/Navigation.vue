@@ -33,11 +33,17 @@
         <!--v-btn class="mx-1" :disabled="startAddPoint || connected == false|| startLocalize ">
           {{ $t("navigation.edit-point") }}
         </v-btn-->
-        <v-btn class="mx-1" @click="add_plan_dialog = true" :disabled="startAddPoint || connected == false || startLocalize ">
+        <v-btn class="mx-1" @click="openPlanDialog()" :disabled="startAddPoint || connected == false || startLocalize ">
           {{ $t("navigation.add-plan.btn") }}
         </v-btn>
         <v-btn class="mx-1" :disabled="startAddPoint || connected == false || startLocalize " @click="startDrawing('localize')">
           {{ $t("navigation.localize.btn") }}
+        </v-btn>
+        <v-btn class="mx-1" variant="outlined" :disabled="startAddPoint || connected == false || startLocalize" @click="continueRoute()" >
+          {{ $t("navigation.continue-plan-btn") }}
+        </v-btn>
+        <v-btn class="mx-1" variant="outlined" :disabled="startAddPoint || connected == false || startLocalize" @click="continueRoute()">
+          {{ $t("navigation.stop-plan-btn") }}
         </v-btn>
         <v-btn class="mx-1" color="grey-800" variant="outlined" @click="changeCameraFeedStatus">
           <v-icon>mdi-camera</v-icon>
@@ -52,9 +58,6 @@
     <VRow style="margin-bottom:200px">
       <v-col sm="12" md="9">
         <v-card>
-          <v-card-title>
-            <h4>{{ $t("navigation.robot-model") }}</h4>
-          </v-card-title>
           <v-card-text>
             <div class="text-center">
               <div id="visualization-canvas"></div>
@@ -106,14 +109,14 @@
 
     </VRow>
     <v-row class="bottom-div">
-      <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table"
+      <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table pb-3" style="min-width:70%;max-width:80%"
         :headers="headerLocale('map_headers')" :items="map_points">
         <template v-slot:item="{ item, index }">
           <tr>
             <td>{{ item.id }}</td>
             <td>{{ item.x }}</td>
             <td>{{ item.y }}</td>
-            <td>{{ item.theta }}</td>
+            <td>{{ radianToDegree(item.theta) }}</td>
             <td>{{ item.label }}</td>
             <!--td>
               <v-btn class="mx-1" color="success" @click="commandWaypoint(item.x, item.y, item.theta)"><v-icon
@@ -132,7 +135,7 @@
       </v-data-table>
     </v-row>
   </div>
-  <v-dialog v-model="add_plan_dialog" max-width="700">
+  <v-dialog v-model="add_plan_dialog" max-width="900">
     <template v-slot:default="{ isActive }">
       <v-card rounded="lg">
         <v-card-title class="d-flex justify-space-between align-center">
@@ -145,7 +148,16 @@
 
         <v-divider class="mb-4"></v-divider>
 
-        <v-card-text>
+        <v-card-actions class="my-2 d-flex justify-end">
+          <v-btn class="text-none" rounded="xl" text="" color='secondary' variant="outlined" @click="isActive.value = false;">
+            {{ $t('navigation.add-plan.discard-btn') }}
+          </v-btn>
+
+          <v-btn class="text-none" color="primary" rounded="xl" text="Save" variant="flat" @click="savePlan">
+            {{ $t('navigation.add-plan.save-btn') }}
+          </v-btn>
+        </v-card-actions>
+        <v-card-text class="pt-0">
           <v-expansion-panels v-model="panel" multiple>
             <v-expansion-panel>
               <v-expansion-panel-title expand-icon="mdi-menu-down">
@@ -154,16 +166,19 @@
               <v-expansion-panel-text>
                 <v-row>
                   <v-col>
-                    <v-btn class='mr-2 mb-1' color="primary" variant="outlined"><v-icon>mdi-plus </v-icon>Sleep</v-btn>
-                    <v-btn class='mr-2 mb-1' color="primary" variant="outlined"><v-icon>mdi-plus </v-icon>Motion</v-btn>
+                    <v-btn class='mr-2 mb-1' color="primary" variant="outlined" @click="addToPlan('sleep')"><v-icon>mdi-plus </v-icon>{{ $t("navigation.add-plan.route-plan-table.add-sleep-btn") }}</v-btn>
+                    <v-btn class='mr-2 mb-1' color="primary" variant="outlined" @click="addToPlan('set_motion')"><v-icon>mdi-plus </v-icon>{{ $t("navigation.add-plan.route-plan-table.add-motion-btn") }}</v-btn>
                   </v-col>
                 </v-row>
-                <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table"
+                <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table" disable-sort
                   :headers="headerLocale('add_plan_headers')" :items="added_to_plan">
                   <template v-slot:item="{ item, index }">
                     <tr>
-                      <td>[{{ item.x }},{{ item.y }},{{ item.theta }}]</td>
-                      <td>{{ item.label }}</td>
+                      <td>{{ index+1 }}</td>
+                      <td>{{ typeLocale(item.type) }}</td>
+                      <td v-if="item.type=='navigate'">{{ $t("navigation.add-plan.route-plan-table.label") }}{{ item.label }}</td>
+                      <td v-else-if="item.type=='sleep'">{{ $t("navigation.add-plan.route-plan-table.duration") }}{{ item.duration }}</td>
+                      <td v-else-if="item.type=='set_motion'">{{ $t("navigation.add-plan.route-plan-table.x") }}{{ item.x }}, {{ $t("navigation.add-plan.route-plan-table.r") }}{{  item.r  }}</td>
                       <td>
                         <v-btn v-if="index > 0" @click="moveUp(index)" color="info" class="mx-1">
                           <v-icon size="large">mdi-arrow-up</v-icon>
@@ -191,10 +206,10 @@
                   :headers="headerLocale('defined_poses_headers')" :items="map_points">
                   <template v-slot:item="{ item, index }">
                     <tr>
-                      <td>[{{ item.x }},{{ item.y }},{{ item.theta }}]</td>
+                      <td>[{{ item.x }},{{ item.y }},{{ radianToDegree(item.theta) }}]</td>
                       <td>{{ item.label }}</td>
                       <td>
-                        <v-btn @click="addToPlan(item)" color="success">
+                        <v-btn @click="addToPlan('navigate',item)" color="success">
                           <v-icon size="large">mdi-plus</v-icon>
                         </v-btn>
                       </td>
@@ -210,9 +225,9 @@
               </v-expansion-panel-title>
               <v-expansion-panel-text>
                 <v-radio-group v-model="sequence_mode">
-                  <v-radio :label="sequenceLocale('single')" value="1"></v-radio>
-                  <v-radio :label="sequenceLocale('loop')" value="2"></v-radio>
-                  <v-radio :label="sequenceLocale('bnf')" value="3"></v-radio>
+                  <v-radio :label="sequenceLocale('single')" value="SINGLE_RUN"></v-radio>
+                  <v-radio :label="sequenceLocale('loop')" value="LOOP_RUN"></v-radio>
+                  <v-radio :label="sequenceLocale('bnf')" value="BACK_AND_FORTH"></v-radio>
                 </v-radio-group>
               </v-expansion-panel-text>
             </v-expansion-panel>
@@ -223,11 +238,11 @@
         <v-divider class="mt-2"></v-divider>
 
         <v-card-actions class="my-2 d-flex justify-end">
-          <v-btn class="text-none" rounded="xl" text="" @click="isActive.value = false;">
+          <v-btn class="text-none" rounded="xl" text="" color='secondary' variant="outlined" @click="isActive.value = false;">
             {{ $t('navigation.add-plan.discard-btn') }}
           </v-btn>
 
-          <v-btn class="text-none" color="primary" rounded="xl" text="Save" variant="flat" @click="isActive.value = false">
+          <v-btn class="text-none" color="primary" rounded="xl" text="Save" variant="flat" @click="savePlan">
             {{ $t('navigation.add-plan.save-btn') }}
           </v-btn>
         </v-card-actions>
@@ -270,7 +285,7 @@
               {{ $t("navigation.add-point.confirm.theta") }}
             </th>
             <td>
-              {{ addPointFinal.theta }}
+              {{ radianToDegree(addPointFinal.theta) }}
             </td>
           </tr>
           <tr v-if="startAddPoint">
@@ -354,19 +369,7 @@ export default {
         { label: "Local (192.xxx.xxx.xxx)", id: "local", ros_address: 'ws://192.168.1.14:8090', camera_port: '8080' },
         { label: "Public (124.xxx.xxx.xxx)", id: "public", ros_address: 'ws://124.244.207.24:9090', camera_port: '9080' },
       ],
-      maps: [
-        { label: "bookstore", id: "bookstore", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "Mp2", id: "Mp2", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "Mp3", id: "Mp3", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "Mp4", id: "Mp4", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "Mp55", id: "Mp55", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "Mp6", id: "Mp6", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "Mp7", id: "Mp7", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "mp8", id: "mp8", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "test4", id: "test4", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-        { label: "test5", id: "test5", ros_address: 'ws://192.168.1.14:9090', camera_port: '8080' },
-
-      ],
+      maps: [],
       ros_source: 'local',
       map_select: '',
       slam_stopped: true,
@@ -396,8 +399,9 @@ export default {
         { title: 'Edit', key: 'actions' },
       ],
       add_plan_headers_ch: [
-        { title: '位置[x,y,theta]', key: 'pose' },
-        { title: '标记', key: 'label' },
+        { title: '顺序' },
+        { title: '行动', key: 'type' },
+        { title: '细节', key: 'pose' },
         { title: '编辑', key: 'actions' },
       ],
       defined_poses_headers: [
@@ -437,58 +441,9 @@ export default {
       arrowEndX: 0,
       arrowEndY: 0,
       panel: [0, 1, 2],
-      sequence_mode: "1",
+      sequence_mode: "SINGLE_RUN",
       added_to_plan: [],
       map_points: [
-        {
-          "id": 1,
-          "x": -2.55,
-          "y": -0.35,
-          "theta": -1.59,
-          "label": "538"
-        },
-        {
-          "id": 2,
-          "x": -2.34,
-          "y": -5.10,
-          "theta": 1.57,
-          "label": "2"
-        },
-        {
-          "id": 3,
-          "x": -3.01,
-          "y": 3.05,
-          "theta": -1.57,
-          "label": "corridor"
-        },
-        {
-          "id": 4,
-          "x": -0.73,
-          "y": -0.41,
-          "theta": -0.46,
-          "label": "0"
-        },
-        {
-          "id": 5,
-          "x": 0.66,
-          "y": -3.41,
-          "theta": 1.55,
-          "label": "test"
-        },
-        {
-          "id": 6,
-          "x": "-2.54",
-          "y": "5.40",
-          "theta": "-0.91",
-          "label": "Pt11"
-        },
-        {
-          "id": 7,
-          "x": "4.61",
-          "y": "-1.05",
-          "theta": "-3.58",
-          "label": "current"
-        }
       ],
       changes: [],
       connected: false,
@@ -563,10 +518,29 @@ export default {
     var self = this;
     if (self.socket) {
       self.socket.disconnect();
+      self.disconnect();
     }
     //this.ros.close()
   },
   methods: {
+    radianToDegree(num){
+      return (num*180/Math.PI).toFixed(2);
+    },
+    typeLocale(type){
+      var self = this;
+      if(type=='navigate'){
+        if(self.$i18n.locale=='zh') return "导航";
+        else return "navigate";
+      }
+      else if(type=='sleep'){
+        if(self.$i18n.locale=='zh') return "待机";
+        else return "sleep";
+      }
+      else if(type=='set_motion'){
+        if(self.$i18n.locale=='zh') return "移动";
+        else return "set_motion";
+      }
+    },    
     headerLocale(headers){
       var self = this;
       if(headers=='select_map'){
@@ -618,11 +592,21 @@ export default {
       var self = this;
       let mapObject = self.maps.filter(map => map.id === v)[0];
       self.map_label = mapObject.label;
+      self.confirmAddPointDialog = false;
+        self.startAddPoint = false;
+        self.startLocalize = false;
+        self.showOverlay = false;
+        self.showArrow = false;
+        self.selectStartPoint = false;
+        self.selectEndPoint = false;
+        self.map_points=[];
       if (self.connected) {
         self.ros.close()
+        
       }
       if (self.socket) {
         self.socket.disconnect();
+        
       }
     },
     onSourceSelectChange(v) {
@@ -673,7 +657,7 @@ export default {
           self.showOverlay = false;
           let deltaY = self.endPoint.y - self.startPoint.y;
           let deltaX = self.endPoint.x - self.startPoint.x;          
-          self.theta = Math.atan2(deltaY, deltaX) 
+          self.theta = Math.atan2(deltaY, deltaX)
           //self.theta = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
           self.addPointFinal.theta = self.theta.toFixed(2);
           if(self.startAddPoint == self.startLocalize){
@@ -745,8 +729,21 @@ export default {
       var self = this;
       self.socket.emit('delete_target', target_id);
     },
+    continueRoute(){
+      var self = this;
+      self.socket.emit('client_continue_route');
+    },
+    stopRoute(){
+      var self = this;
+      self.socket.emit('client_stop_route');
+    },
     addToPlanRoutes(item) {
       console.log(item);
+    },
+    openPlanDialog(){
+      var self = this;
+      self.add_plan_dialog = true;
+      self.socket.emit('get_route_plan');
     },
     moveUp(index) {
       // Swap the current row with the row above it
@@ -763,10 +760,83 @@ export default {
       this.changes = [...this.added_to_plan];
       console.log(this.changes)
     },
-    addToPlan(item) {
+    changeJSONToArray(object){
+      var self = this;
+      self.added_to_plan = [];;
+      self.sequence_mode = object.mode;
+      console.log(object.plan)
+      let jsonLength = Object.keys(object.plan).length;
+      
+      for (var i = 0; i < jsonLength; i++) {
+        let point = object.plan[i];
+        if(point.type=='navigate')
+          self.added_to_plan.push({ id:point.pointID, type: point.type, label: point.label });
+        else if(point.type=='sleep')
+          self.added_to_plan.push({ type: point.type, duration: point.duration });
+        else if(point.type=='set_motion')
+          self.added_to_plan.push({ type: point.type, x: point.motion_x, r: point.motion_r });        
+      }
+      console.log(self.added_to_plan)
+    },
+    addToPlan(type, item=null) {
+      var self = this;
       // Add the item to the selectedItems array
-      this.added_to_plan.push(item);
-      console.log(this.added_to_plan);
+      if(type == 'navigate'){
+        item.type='navigate'
+        self.added_to_plan.push(item);
+      }
+      else if(type == 'sleep'){
+        let duration = prompt("Please input sleep duration (in second):");
+        if (isNaN(duration) || duration=='' || duration == null) {
+          alert("Please input number");
+        }
+        else {
+          self.added_to_plan.push({
+            type: "sleep",
+            duration: duration
+          });
+        }
+      }
+      else if(type == 'set_motion'){
+        let x = prompt("Please input x:");
+        let r = prompt("Please input r:");
+        if (isNaN(x) || x=='' || x == null) {
+          alert("Please input number");
+        }
+        else if (isNaN(r) || r=='' || r == null) {
+          alert("Please input number");
+        }
+        else {
+          self.added_to_plan.push({
+            type: "set_motion",
+            x: x,
+            r: r
+          });
+        }
+      }
+      console.log(self.added_to_plan);
+    },
+    savePlan(){
+      var self = this;
+      console.log(self.added_to_plan);
+      var seq_mode = self.sequence_mode;
+      var json = {"mode": seq_mode, "plan": []}
+      for(var i = 0; i<self.added_to_plan.length; i++){
+        let point = self.added_to_plan[i];
+        console.log(point);
+        let object ;
+        if(point.type=='navigate'){
+          object = { "seq": i, "type": point.type, "pointID": point.id, "label": point.label };          
+        }
+        else if(point.type=='sleep'){
+          object = { "seq": i, "type": point.type, "duration": point.duration};          
+        }
+        else if(point.type=='set_motion'){
+          object = { "seq": i, "type": point.type, "motion_x": point.x, "motion_r": point.r };          
+        }
+        json.plan.push(object);
+      }
+      self.socket.emit('save_route_plan', json);
     },
     removePlanPoint(index) {
       this.added_to_plan.splice(index, 1);
@@ -861,6 +931,15 @@ export default {
           id: item
         }));
       });
+      self.socket.on('route_plan_list', function (route_plan) {
+        console.log(route_plan);
+        self.changeJSONToArray(route_plan);
+      });
+      self.socket.on('route_plan_saved', function() {
+        self.snackbar.message = self.$t("navigation.add-plan.save-route-message");
+        self.snackbar.open = true;
+        self.add_plan_dialog = false;
+      });
     },
     stopNavigate() {
       var self = this;
@@ -909,6 +988,7 @@ export default {
         linear: { x: this.joystick.vertical, y: 0, z: 0, },
         angular: { x: 0, y: 0, z: this.joystick.horizontal, },
       })
+      //if( this.joystick.vertical !=0 && this.joystick.horizontal !=0 ) {
       if (!this.navigating) {
         topic.publish(message)
       }

@@ -23,7 +23,7 @@
         "y": "Y[m]",
         "theta": "Theta[°]",
         "label": "标记",
-        "discard-btn": "舍弃",
+        "discard-btn": "放弃",
         "confirm-btn": "确认",
         "new-point-message": "新记录点添加成功"
       }
@@ -31,15 +31,24 @@
     "edit-point": "编辑记录点",
     "add-plan": {
       "btn": "编辑规划",
-      "header": "添加规划",
+      "header": "编辑规划",
       "route-plan": "编辑规划",
+      "route-plan-table":{
+        "add-sleep-btn": "待机",
+        "add-motion-btn": "移动",
+        "duration": "时间: ",
+        "label": "标记: ",
+        "x": "移动: ",
+        "r": "角度: "
+      },
       "defined-poses": "已定义位置",
       "sequence-mode": "运行模式",
       "single-run": "单次",
       "loop-run": "循环",
       "back-and-forth": "来回",
-      "discard-btn": "舍弃",
-      "save-btn": "保存"
+      "discard-btn": "放弃",
+      "save-btn": "保存",
+      "save-route-message": "规划已保存"
     },
     "localize": {
       "btn":"定位",
@@ -51,11 +60,13 @@
         "y": "Y[m]",
         "theta": "Theta[°]",
         "label": "标记",
-        "discard-btn": "舍弃",
+        "discard-btn": "放弃",
         "confirm-btn": "确认",
         "new-point-message": "新记录点添加成功"
       }
     },
+    "continue-plan-btn": "继续路线",
+    "stop-plan-btn": "停止路线",
     "connect": "连接",
     "disconnect": "断开连接",
     "robot-model": "机器人模型",
@@ -77,7 +88,7 @@
       "delete_btn": "刪除",
       "edit_btn": "编辑",
       "close_btn": "关闭",
-      "discard_btn": "丢弃",
+      "discard_btn": "放弃",
       "confirm_btn": "确认"
     }
   }

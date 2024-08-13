@@ -126,8 +126,8 @@ export default defineComponent({
   },
   data() {
     return {
-      io_address: "http://124.244.207.24:8000",
-      //io_address: "http://192.168.1.14:8000",
+      io_address: "http://192.168.1.14:8000",
+      //io_address: "http://124.244.207.24:8000",
       socket_connected: false,
       socket: null,
       snackbar: {
@@ -181,7 +181,7 @@ export default defineComponent({
         initialView: 'timeGridWeek',
         initialEvents: [], // alternatively, use the `events` setting to fetch from a feed,
         initialDate: "2024-08-04",
-        events: [],
+        events: [{"start":"2024-08-04T23:58:00","end":"2024-08-04T23:59:00"}],
         editable: true,
         selectable: true,
         selectMirror: true,
@@ -205,6 +205,8 @@ export default defineComponent({
   },
   mounted(){
     var self = this;
+    self.calendarOptions.events = [];
+    self.refetchEvents();
     self.socket = io(self.io_address,
       {
         reconnection: false
@@ -530,21 +532,27 @@ export default defineComponent({
             }
           ]
         }
-      for (var i = 0; i < events.length; i++) {
-        let event = {
-          "start_time": events[i].start_time,
-          "end_time": events[i].end_time,
-          "event": events[i].title,
-        };
-        for(var j = 0; j < json.week.length; j++){
-          if(json.week[j].day == parseInt(events[i].day)){         
-            json.week[j].timetable.push(event);
-            if( parseInt(i) == parseInt(events.length)-1){
-              self.loop_save = false;              
-              return json;                            
+      if(events.length==0){
+        self.loop_save = false;              
+              return json;    
+      }
+      else {
+        for (var i = 0; i < events.length; i++) {
+          let event = {
+            "start_time": events[i].start_time,
+            "end_time": events[i].end_time,
+            "event": events[i].title,
+          };
+          for(var j = 0; j < json.week.length; j++){
+            if(json.week[j].day == parseInt(events[i].day)){         
+              json.week[j].timetable.push(event);
+              if( parseInt(i) == parseInt(events.length)-1){
+                self.loop_save = false;              
+                return json;                            
+              }
             }
           }
-        }        
+        }
       }
     },
   }

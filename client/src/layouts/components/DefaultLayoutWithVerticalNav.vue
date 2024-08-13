@@ -82,18 +82,18 @@ const upgradeBanner = computed(() => {
           to: '/navigation',
         }"
       />
-      <!--VerticalNavLink
-        :item="{
-          title: 'AI聊天机器人',
-          icon: 'mdi-message-processing',
-          to: '/chatbot',
-        }"
-      /-->
       <VerticalNavLink
         :item="{
           title: '时间表',
           icon: 'mdi-timetable',
           to: '/timetable',
+        }"
+      />
+      <VerticalNavLink
+        :item="{
+          title: 'AI聊天机器人',
+          icon: 'mdi-message-processing',
+          to: '/chatbot',
         }"
       />
 
