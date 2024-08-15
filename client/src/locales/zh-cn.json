@@ -11,6 +11,7 @@
     "logs": "连接日志"
   },
   "navigation": {
+    "nav-id-not-found-message": "未找到路线规划中的导航点",
     "select-map": "选择地图",
     "camera": "相机图像",
     "add-point": {
@@ -23,6 +24,7 @@
         "y": "Y[m]",
         "theta": "Theta[°]",
         "label": "标记",
+        "charging-port": "充电站",
         "discard-btn": "放弃",
         "confirm-btn": "确认",
         "new-point-message": "新记录点添加成功"
@@ -36,10 +38,18 @@
       "route-plan-table":{
         "add-sleep-btn": "待机",
         "add-motion-btn": "移动",
+        "add-execute-action-btn": "执行程序",
         "duration": "时间: ",
+        "sleep-prompt": "请输入待机时间(秒):",
+        "sleep-prompt-error": "请输入数字。",
         "label": "标记: ",
+        "charging-port": "(充电站)",
         "x": "移动: ",
-        "r": "角度: "
+        "r": "角度: ",
+        "x-prompt": "请输入移动距离:",
+        "x-prompt-error": "请输入数字。",
+        "r-prompt": "请输入角度:",
+        "r-prompt-error": "请输入数字。"
       },
       "defined-poses": "已定义位置",
       "sequence-mode": "运行模式",
@@ -65,12 +75,13 @@
         "new-point-message": "新记录点添加成功"
       }
     },
-    "continue-plan-btn": "继续路线",
+    "start-plan-btn": "开始路线",
     "stop-plan-btn": "停止路线",
     "connect": "连接",
     "disconnect": "断开连接",
     "robot-model": "机器人模型",
     "joystick": "操纵摇杆",
+    "em-stop-btn": "急停",
     "logs": "连接日志"
   },
   "timetable": {

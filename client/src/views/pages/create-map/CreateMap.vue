@@ -51,15 +51,6 @@
           <p>Y: {{ joystick.horizontal.toFixed(3) }}</p>
         </v-card-text>
       </v-card>
-      <br>
-      <v-card>
-        <v-card-title class="text-center">
-          <h4>{{ $t("create-map.logs") }}</h4>
-        </v-card-title>
-        <v-card-text>
-          <p v-for="log in logs">{{ log }}</p>
-        </v-card-text>
-      </v-card>
     </v-col>
 
   </VRow>
@@ -80,12 +71,12 @@ import { ROSLIB, MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
 export default {
   data() {
     return {
-      io_address: "http://192.168.1.14:8000",
-      rosbridge_address: 'ws://192.168.1.14:9090',
-      camera_port: '8080',
-      //io_address: "http://124.244.207.24:8000",
-      //rosbridge_address: 'ws://124.244.207.24:9090',
-      //camera_port: '9080',
+      //io_address: "http://192.168.1.14:8000",
+      //rosbridge_address: 'ws://192.168.1.14:9090',
+      //camera_port: '8080',
+      io_address: "http://124.244.207.24:8000",
+      rosbridge_address: 'ws://124.244.207.24:9090',
+      camera_port: '9080',
       snackbar: {
         open: false,
         message: "",

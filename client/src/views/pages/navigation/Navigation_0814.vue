@@ -40,7 +40,7 @@
           {{ $t("navigation.localize.btn") }}
         </v-btn>
         <v-btn class="mx-1" variant="outlined" :disabled="startAddPoint || connected == false || startLocalize" @click="continueRoute()" >
-          {{ $t("navigation.start-plan-btn") }}
+          {{ $t("navigation.continue-plan-btn") }}
         </v-btn>
         <v-btn class="mx-1" variant="outlined" :disabled="startAddPoint || connected == false || startLocalize" @click="continueRoute()">
           {{ $t("navigation.stop-plan-btn") }}
@@ -94,41 +94,45 @@
             <div id="dragCircle" :style="dragCircleStyle"></div>
             <p>X: {{ joystick.vertical.toFixed(3) }}</p>
             <p>Y: {{ joystick.horizontal.toFixed(3) }}</p>
-            <br>
-            <v-btn color="error" variant="outlined" @click="executeEMStop" :disabled="connected == false">{{ $t("navigation.em-stop-btn") }}</v-btn>
           </v-card-text>
         </v-card>
-        
+        <br>
+        <v-card>
+          <v-card-title class="text-center">
+            <h4>{{ $t("navigation.logs") }}</h4>
+          </v-card-title>
+          <v-card-text>
+            <p v-for="log in logs">{{ log }}</p>
+          </v-card-text>
+        </v-card>
       </v-col>
 
     </VRow>
     <v-row class="bottom-div">
-      <v-col cols="12" class="px-0 py-0 mb-3">
-        <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table pb-3" style="min-width:70%;max-width:80%"
-          :headers="headerLocale('map_headers')" :items="map_points">
-          <template v-slot:item="{ item, index }">
-            <tr @mouseover="changeArrowColor(item.id)" @mouseleave="resetArrowColor(item.id)">
-              <td>{{ item.id }}</td>
-              <td>{{ item.x }}</td>
-              <td>{{ item.y }}</td>
-              <td>{{ radianToDegree(item.theta) }}</td>
-              <td>{{ item.label }}</td>
-              <!--td>
-                <v-btn class="mx-1" color="success" @click="commandWaypoint(item.x, item.y, item.theta)"><v-icon
-                    size="large">mdi-forward</v-icon></v-btn>
-                <v-btn class="mx-1" color="error" @click="deletePoint(index)"><v-icon
-                    size="large">mdi-delete</v-icon></v-btn>
-              </td-->
-              <td>
-                <v-btn class="mx-1" color="success" @click="driveToTarget(item.id)"><v-icon
-                    size="large">mdi-forward</v-icon></v-btn>
-                <v-btn class="mx-1" color="error" @click="deleteTarget(item.id)"><v-icon
-                    size="large">mdi-delete</v-icon></v-btn>
-              </td>
-            </tr>
-          </template>
-        </v-data-table>
-      </v-col>
+      <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table pb-3" style="min-width:70%;max-width:80%"
+        :headers="headerLocale('map_headers')" :items="map_points">
+        <template v-slot:item="{ item, index }">
+          <tr>
+            <td>{{ item.id }}</td>
+            <td>{{ item.x }}</td>
+            <td>{{ item.y }}</td>
+            <td>{{ radianToDegree(item.theta) }}</td>
+            <td>{{ item.label }}</td>
+            <!--td>
+              <v-btn class="mx-1" color="success" @click="commandWaypoint(item.x, item.y, item.theta)"><v-icon
+                  size="large">mdi-forward</v-icon></v-btn>
+              <v-btn class="mx-1" color="error" @click="deletePoint(index)"><v-icon
+                  size="large">mdi-delete</v-icon></v-btn>
+            </td-->
+            <td>
+              <v-btn class="mx-1" color="success" @click="driveToTarget(item.id)"><v-icon
+                  size="large">mdi-forward</v-icon></v-btn>
+              <v-btn class="mx-1" color="error" @click="deleteTarget(item.id)"><v-icon
+                  size="large">mdi-delete</v-icon></v-btn>
+            </td>
+          </tr>
+        </template>
+      </v-data-table>
     </v-row>
   </div>
   <v-dialog v-model="add_plan_dialog" max-width="900">
@@ -164,7 +168,6 @@
                   <v-col>
                     <v-btn class='mr-2 mb-1' color="primary" variant="outlined" @click="addToPlan('sleep')"><v-icon>mdi-plus </v-icon>{{ $t("navigation.add-plan.route-plan-table.add-sleep-btn") }}</v-btn>
                     <v-btn class='mr-2 mb-1' color="primary" variant="outlined" @click="addToPlan('set_motion')"><v-icon>mdi-plus </v-icon>{{ $t("navigation.add-plan.route-plan-table.add-motion-btn") }}</v-btn>
-                    <v-btn class='mr-2 mb-1' color="primary" variant="outlined" @click="addToPlan('execute_action')"><v-icon>mdi-plus </v-icon>{{ $t("navigation.add-plan.route-plan-table.add-execute-action-btn") }}</v-btn>
                   </v-col>
                 </v-row>
                 <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table" disable-sort
@@ -173,7 +176,7 @@
                     <tr>
                       <td>{{ index+1 }}</td>
                       <td>{{ typeLocale(item.type) }}</td>
-                      <td v-if="item.type=='navigate'">{{ $t("navigation.add-plan.route-plan-table.label") }}{{ item.label }}<span v-if="item.charging_port==true">&nbsp{{ $t("navigation.add-plan.route-plan-table.charging-port") }}</span></td>
+                      <td v-if="item.type=='navigate'">{{ $t("navigation.add-plan.route-plan-table.label") }}{{ item.label }}</td>
                       <td v-else-if="item.type=='sleep'">{{ $t("navigation.add-plan.route-plan-table.duration") }}{{ item.duration }}</td>
                       <td v-else-if="item.type=='set_motion'">{{ $t("navigation.add-plan.route-plan-table.x") }}{{ item.x }}, {{ $t("navigation.add-plan.route-plan-table.r") }}{{  item.r  }}</td>
                       <td>
@@ -205,7 +208,6 @@
                     <tr>
                       <td>[{{ item.x }},{{ item.y }},{{ radianToDegree(item.theta) }}]</td>
                       <td>{{ item.label }}</td>
-                      <td>{{ chargingPortLocale(item.charging_port) }}</td>
                       <td>
                         <v-btn @click="addToPlan('navigate',item)" color="success">
                           <v-icon size="large">mdi-plus</v-icon>
@@ -223,9 +225,9 @@
               </v-expansion-panel-title>
               <v-expansion-panel-text>
                 <v-radio-group v-model="sequence_mode">
-                  <v-radio :label="sequenceLocale('single')" value="run_sequence_once"></v-radio>
-                  <v-radio :label="sequenceLocale('loop')" value="run_sequence_in_loop"></v-radio>
-                  <v-radio :label="sequenceLocale('bnf')" value="run_sequence_back_and_forth"></v-radio>
+                  <v-radio :label="sequenceLocale('single')" value="SINGLE_RUN"></v-radio>
+                  <v-radio :label="sequenceLocale('loop')" value="LOOP_RUN"></v-radio>
+                  <v-radio :label="sequenceLocale('bnf')" value="BACK_AND_FORTH"></v-radio>
                 </v-radio-group>
               </v-expansion-panel-text>
             </v-expansion-panel>
@@ -295,14 +297,6 @@
               </v-text-field>
             </td>
           </tr>
-          <tr v-if="startAddPoint">
-            <th class="text-left">
-              {{ $t("navigation.add-point.confirm.charging-port") }}
-            </th>
-            <td>
-              <v-switch v-model="addPointFinal.charging_port"></v-switch>
-            </td>
-          </tr>
         </v-table>
       </v-card-text>
 
@@ -360,12 +354,12 @@ import { ROSLIB, MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
 export default {
   data() {
     return {
-      io_address: "http://192.168.1.14:8000",
-      rosbridge_address: 'ws://192.168.1.14:9090',
-      camera_port: '8080',
-      //io_address: "http://124.244.207.24:8000",
-      //rosbridge_address: 'ws://124.244.207.24:9090',
-      //camera_port: '9080',
+      //io_address: "http://192.168.1.14:8000",
+      //rosbridge_address: 'ws://192.168.1.14:9090',
+      //camera_port: '8080',
+      io_address: "http://124.244.207.24:8000",
+      rosbridge_address: 'ws://124.244.207.24:9090',
+      camera_port: '9080',
       snackbar: {
         open: false,
         message: "",
@@ -413,13 +407,11 @@ export default {
       defined_poses_headers: [
         { title: 'Pose[x,y,theta]', key: 'pose' },
         { title: 'Label', key: 'label' },
-        { title: 'Charging Port', key: 'charging_port' },
         { title: 'Add to Route', key: 'actions' },
       ],
       defined_poses_headers_ch: [
         { title: '位置[x,y,theta]', key: 'pose' },
         { title: '标记', key: 'label' },
-        { title: '充电站', key: 'charging_port' },
         { title: '添加至路线', key: 'actions' },
       ],
       confirmAddPointDialog: false,
@@ -434,7 +426,6 @@ export default {
         y: null,
         theta: null,
         label: "",
-        charging_port: false,
       },
       startPoint: {
         x: null,
@@ -445,8 +436,12 @@ export default {
         y: null,
       },
       theta: null,
+      arrowStartX: 0,
+      arrowStartY: 0,
+      arrowEndX: 0,
+      arrowEndY: 0,
       panel: [0, 1, 2],
-      sequence_mode: "run_sequence_once",
+      sequence_mode: "SINGLE_RUN",
       added_to_plan: [],
       map_points: [
       ],
@@ -531,17 +526,6 @@ export default {
     radianToDegree(num){
       return (num*180/Math.PI).toFixed(2);
     },
-    chargingPortLocale(port){
-      var self = this;
-      if(port==true){
-        if(self.$i18n.locale=='zh') return "是";
-        else return "Yes";
-      }
-      else{
-        if(self.$i18n.locale=='zh') return "否";
-        else return "No";
-      }
-    },    
     typeLocale(type){
       var self = this;
       if(type=='navigate'){
@@ -664,16 +648,6 @@ export default {
           else if(self.startLocalize)
             self.snackbar.message = this.$t("navigation.localize.direction-message");
           self.snackbar.open = true;
-          this.interactArrow = new ROS3D.Arrow({
-            ros: this.ros,
-            tfClient: this.tfClient,
-            shaftDiameter: 0.2, headDiameter: 0.3, headLength: 0.4,
-            material: new ROS3D.makeColorMaterial(0, 0, 1, 0.5),
-            origin: new THREE.Vector3(x, y, 0),
-          })
-          this.interactArrow.name = 'usrClickArrow'
-          console.log(this.interactArrow)
-          this.viewer.scene.add(this.interactArrow)
         }
         else if (self.selectEndPoint == false) {
           self.endPoint.x = x;
@@ -686,7 +660,6 @@ export default {
           self.theta = Math.atan2(deltaY, deltaX)
           //self.theta = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
           self.addPointFinal.theta = self.theta.toFixed(2);
-          self.addPointFinal.charging_port = false;
           if(self.startAddPoint == self.startLocalize){
             self.startAddPoint = false;
             self.startLocalize = false;
@@ -696,8 +669,6 @@ export default {
             self.snackbar.open = true;
           }
           self.openConfirmAddPoint();
-          let obj = this.viewer.scene.getObjectByName('usrClickArrow')
-          if(obj != null) this.viewer.scene.remove(obj)
         }
       }
     },
@@ -712,7 +683,6 @@ export default {
       self.addPointFinal.y = null;
       self.addPointFinal.theta = null;
       self.addPointFinal.label = "";
-      self.addPointFinal.chargingPort = false;
       self.startAddPoint = false,
       self.startLocalize = false;
       self.selectEndPoint = false;
@@ -725,8 +695,7 @@ export default {
           label: self.addPointFinal.label,
           x: self.addPointFinal.x,
           y: self.addPointFinal.y,
-          theta: self.addPointFinal.theta,
-          charging_port: self.addPointFinal.charging_port
+          theta: self.addPointFinal.theta
         });
         self.snackbar.open = true;
         self.snackbar.message = self.$t("navigation.add-point.confirm.new-point-message");
@@ -746,20 +715,11 @@ export default {
       self.addPointFinal.y = null;
       self.addPointFinal.theta = null;
       self.addPointFinal.label = "";
-      self.addPointFinal.charging_port = false;
       self.confirmAddPointDialog = false;
       self.startAddPoint = false,
       self.startLocalize = false;
       self.selectEndPoint = false;
       self.selectStartPoint = false;
-    },
-    changeArrowColor(id){
-      let obj = this.viewer.scene.getObjectByName("arrow_"+id)
-      if(obj != null) obj.setColor("0x00FFFF");
-    },
-    resetArrowColor(id){
-      let obj = this.viewer.scene.getObjectByName("arrow_"+id)
-      if(obj != null) obj.setColor("0x000000");
     },
     driveToTarget(target_id) {
       var self = this; 
@@ -810,7 +770,7 @@ export default {
       for (var i = 0; i < jsonLength; i++) {
         let point = object.plan[i];
         if(point.type=='navigate')
-          self.added_to_plan.push({ id:point.pointID, type: point.type, label: point.label, charging_port: point.charging_port });
+          self.added_to_plan.push({ id:point.pointID, type: point.type, label: point.label });
         else if(point.type=='sleep')
           self.added_to_plan.push({ type: point.type, duration: point.duration });
         else if(point.type=='set_motion')
@@ -826,12 +786,11 @@ export default {
         self.added_to_plan.push(item);
       }
       else if(type == 'sleep'){
-        let duration = prompt(self.$i18n.t("navigation.add-plan.route-plan-table.sleep-prompt"));
+        let duration = prompt("Please input sleep duration (in second):");
         if (isNaN(duration) || duration=='' || duration == null) {
-          alert(self.$i18n.t("navigation.add-plan.route-plan-table.sleep-prompt-error"));
+          alert("Please input number");
         }
         else {
-          duration = parseFloat(duration);
           self.added_to_plan.push({
             type: "sleep",
             duration: duration
@@ -839,23 +798,20 @@ export default {
         }
       }
       else if(type == 'set_motion'){
-        let x = prompt(self.$i18n.t("navigation.add-plan.route-plan-table.x-prompt"));
+        let x = prompt("Please input x:");
+        let r = prompt("Please input r:");
         if (isNaN(x) || x=='' || x == null) {
-          alert(self.$i18n.t("navigation.add-plan.route-plan-table.x-prompt-error"));
-        }else {
-          let r = prompt(self.$i18n.t("navigation.add-plan.route-plan-table.r-prompt"));
-          if (isNaN(r) || r=='' || r == null) {
-            alert(self.$i18n.t("navigation.add-plan.route-plan-table.r-prompt-error"));
-          }
-          else {
-            x = parseFloat(x);
-            r = parseFloat(r);
-            self.added_to_plan.push({
-              type: "set_motion",
-              x: x,
-              r: r
-            });
-          }
+          alert("Please input number");
+        }
+        else if (isNaN(r) || r=='' || r == null) {
+          alert("Please input number");
+        }
+        else {
+          self.added_to_plan.push({
+            type: "set_motion",
+            x: x,
+            r: r
+          });
         }
       }
       console.log(self.added_to_plan);
@@ -870,7 +826,7 @@ export default {
         console.log(point);
         let object ;
         if(point.type=='navigate'){
-          object = { "seq": i, "type": point.type, "pointID": point.id, "label": point.label, "charging_port": point.charging_port };          
+          object = { "seq": i, "type": point.type, "pointID": point.id, "label": point.label };          
         }
         else if(point.type=='sleep'){
           object = { "seq": i, "type": point.type, "duration": point.duration};          
@@ -895,7 +851,6 @@ export default {
       let map_name = self.map_select;
       self.socket = io(self.io_address);
       self.socket.on('connect', function () {
-        self.socket.emit('get_route_plan');
         console.log('Connected to the server');
         if (map_name == null || map_name.trim() == "") {
           self.socket.emit('get_current_config', 'STATIC');
@@ -960,28 +915,8 @@ export default {
         console.log(message);
       });
       self.socket.on('get_targets', function (targets){
-        if(self.map_points!=null){
-          self.map_points.forEach(function(p){
-            let name = "arrow_"+p.id;
-            let obj = self.viewer.scene.getObjectByName(name)
-            if(obj != null) self.viewer.scene.remove(obj)
-          });
-        }
         console.log(targets);
         self.map_points = targets;
-        self.map_points.forEach(function(p){
-          let arrow = new ROS3D.Arrow({
-            ros: self.ros,
-            tfClient: self.tfClient,
-            shaftDiameter: 0.15, headDiameter: 0.3, headLength: 0.4,
-            material: new ROS3D.makeColorMaterial(0, 0, 0, 0.8),
-            origin: new THREE.Vector3(p.x, p.y, 0),
-            direction: new THREE.Vector3(Math.cos(p.theta), Math.sin(p.theta), 0),
-          });
-          arrow.name = 'arrow_'+p.id;
-          console.log(arrow);
-          self.viewer.scene.add(arrow);
-        });
       });
       self.socket.on('localized', function (message){
         self.start
@@ -1009,10 +944,6 @@ export default {
     stopNavigate() {
       var self = this;
       self.socket.disconnect();
-    },
-    executeEMStop(){
-      var self = this;
-      self.socket.emit('em_stop');
     },
     connect: function () {
       var self = this;
@@ -1092,7 +1023,6 @@ export default {
         antialias: true,
       })
       this.viewer.renderer.domElement.addEventListener('click', this.mouseClickHandler)
-      this.viewer.renderer.domElement.addEventListener('mousemove', this.mouseDragHandler)
       this.viewer.cameraControls.userRotateSpeed = 0
       this.viewer.cameraControls.autoRotate = false
       this.viewer.cameraControls.autoRotateSpeed = 0
@@ -1233,23 +1163,6 @@ export default {
         this.handleImageClick(mx, my);
       }
       //let vector = new THREE.Vector3((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1, 0.5)
-    },
-    mouseDragHandler(event) {
-      if((this.startLocalize || this.startAddPoint) && this.selectStartPoint){
-        let rect = event.target.getBoundingClientRect()
-        let mouseX = -(event.clientX - rect.left - rect.width / 2)
-        let mouseY = -(event.clientY - rect.top - rect.height / 2)
-
-        let dpp = this.viewer.camera.position.z * Math.tan(Math.PI * (this.viewer.camera.fov / 2) / 180) / (rect.height / 2)
-
-        let mx = dpp * mouseY + this.viewer.camera.position.x - this.viewer.scene.position.x
-        let my = dpp * mouseX + this.viewer.camera.position.y - this.viewer.scene.position.y
-        let obj = this.viewer.scene.getObjectByName('usrClickArrow')
-          if(obj != null) {
-            let angle = new THREE.Vector3(mx-obj.position.x,my-obj.position.y,0).normalize()
-            obj.setDirection(angle)
-          }
-      }
     },
     setJoystickVals() {
       this.joystick.vertical = -1 * ((this.y / 200) - 0.5)

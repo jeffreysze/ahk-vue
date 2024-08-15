@@ -126,8 +126,8 @@ export default defineComponent({
   },
   data() {
     return {
-      io_address: "http://192.168.1.14:8000",
-      //io_address: "http://124.244.207.24:8000",
+      //io_address: "http://192.168.1.14:8000",
+      io_address: "http://124.244.207.24:8000",
       socket_connected: false,
       socket: null,
       snackbar: {
