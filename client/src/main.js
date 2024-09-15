@@ -18,7 +18,7 @@ loadFonts()
 // Create vue app
 const app = createApp(App)
 
-
+app.config.globalProperties.$ip_connect = '1233211234567'
 // Use plugins
 app.use(vuetify)
 app.use(i18n)

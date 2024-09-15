@@ -1,115 +1,32 @@
-<script setup>
-import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
-import logo from '@images/logo.svg?raw'
-
-const form = ref({
-  email: '',
-  password: '',
-  remember: false,
-})
-
-const isPasswordVisible = ref(false)
-</script>
-
 <template>
   <div class="auth-wrapper d-flex align-center justify-center pa-4">
-    <VCard
-      class="auth-card pa-4 pt-7"
-      max-width="448"
-    >
+    <VCard class="auth-card pa-4 pt-7" min-width="448">
       <VCardItem class="justify-center">
-        
-
         <VCardTitle class="text-2xl font-weight-bold">
-          <h3 style='color: blue;'><i>I-Robotics&nbsp;</i></h3>
+          <h3 style='color: blue;'><i>I-Robotics&nbsp;
+    {{ $ip_connect }}</i></h3>
         </VCardTitle>
       </VCardItem>
-
-      <VCardText class="pt-2">
-        
-        <p class="mb-0">
-          Please sign-in to your account and start the adventure
-        </p>
-      </VCardText>
 
       <VCardText>
         <VForm @submit.prevent="$router.push('/')">
           <VRow>
             <!-- email -->
             <VCol cols="12">
-              <VTextField
-                v-model="form.email"
-                autofocus
-                placeholder="johndoe@email.com"
-                label="Email"
-                type="email"
-              />
+              <v-select label="Select Robot:" :items="ip_addresses"  item-title="label" item-value="id"
+                v-model="ip_select" @update:modelValue="onMapSelectChange">
+              </v-select>
+              <br>
             </VCol>
+            <v-divider></v-divider>
 
             <!-- password -->
             <VCol cols="12">
-              <VTextField
-                v-model="form.password"
-                label="Password"
-                placeholder="············"
-                :type="isPasswordVisible ? 'text' : 'password'"
-                :append-inner-icon="isPasswordVisible ? 'bx-hide' : 'bx-show'"
-                @click:append-inner="isPasswordVisible = !isPasswordVisible"
-              />
-
-              <!-- remember me checkbox -->
-              <div class="d-flex align-center justify-space-between flex-wrap mt-1 mb-4">
-                <VCheckbox
-                  v-model="form.remember"
-                  label="Remember me"
-                />
-
-                <RouterLink
-                  class="text-primary ms-2 mb-1"
-                  to="javascript:void(0)"
-                >
-                  Forgot Password?
-                </RouterLink>
-              </div>
-
               <!-- login button -->
-              <VBtn
-                block
-                type="submit"
-              >
-                Login
+               <br>
+              <VBtn block :disabled="ip_select=='' || ip_select==null" @click="tmp">
+                Connect
               </VBtn>
-            </VCol>
-
-            <!-- create account -->
-            <VCol
-              cols="12"
-              class="text-center text-base"
-            >
-              <span>New on our platform?</span>
-              <RouterLink
-                class="text-primary ms-2"
-                to="/register"
-              >
-                Create an account
-              </RouterLink>
-            </VCol>
-
-            <VCol
-              cols="12"
-              class="d-flex align-center"
-            >
-              <VDivider />
-              <span class="mx-4">or</span>
-              <VDivider />
-            </VCol>
-
-            <!-- auth providers -->
-            <VCol
-              cols="12"
-              class="text-center"
-            >
-              <AuthProvider />
             </VCol>
           </VRow>
         </VForm>
@@ -117,6 +34,37 @@ const isPasswordVisible = ref(false)
     </VCard>
   </div>
 </template>
+
+
+<script>
+import { io } from "socket.io-client";
+import { ROSLIB, MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
+export default {
+  data() {
+    return {
+      myVar: this.$ip_connect,
+      ip_addresses: [
+        {
+          id: "localhost",
+          label: "localhost",
+        }
+      ],
+      ip_select: null,
+    }
+  },
+  mounted() {
+    var self = this;
+    alert(self.myVar);
+  },  
+  methods: {
+    tmp(){
+      var self = this;
+      self.$ip_connect='asdsadasd';
+      alert("zz");
+    },
+  },
+}
+</script>
 
 <style lang="scss">
 @use "@core/scss/template/pages/page-auth.scss";

@@ -37,7 +37,7 @@
       </v-responsive>
     </v-col>
     <v-col sm="12" md="3" style="background-color:#dadbf1; min-height: 175px">
-      <v-card class="text-center">
+      <v-card id="control-card" class="text-center">
         <v-card-title>
           <h4>{{ $t("create-map.joystick") }}</h4>
         </v-card-title>
@@ -49,7 +49,10 @@
           <div id="dragCircle" :style="dragCircleStyle"></div>
           <p>X: {{ joystick.vertical.toFixed(3) }}</p>
           <p>Y: {{ joystick.horizontal.toFixed(3) }}</p>
-        </v-card-text>
+          <br>
+            <p>{{ $t("navigation.voltage") }} {{ bunker_status.battery_voltage.toFixed(2) }} V</p>
+            <v-btn color="error" variant="outlined" @click="executeEMStop" :disabled="connected == false">{{ $t("navigation.em-stop-btn") }}</v-btn>
+          </v-card-text>
       </v-card>
     </v-col>
 
@@ -71,12 +74,18 @@ import { ROSLIB, MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
 export default {
   data() {
     return {
-      //io_address: "http://192.168.1.14:8000",
-      //rosbridge_address: 'ws://192.168.1.14:9090',
+      controlCard: null,
+      io_address: "http://192.168.1.14:8000",
+      rosbridge_address: 'ws://192.168.1.14:9090',
+      camera_port: '8080',
+
+      //io_address: "http://localhost:8000",
+      //rosbridge_address: 'ws://localhost:9090',
       //camera_port: '8080',
-      io_address: "http://124.244.207.24:8000",
-      rosbridge_address: 'ws://124.244.207.24:9090',
-      camera_port: '9080',
+
+      //io_address: "http://124.244.207.24:8000",
+      //rosbridge_address: 'ws://124.244.207.24:9090',
+      //camera_port: '9080',
       snackbar: {
         open: false,
         message: "",
@@ -96,6 +105,7 @@ export default {
       logs: [],
       loading: true,
       dragging: false,
+      send_zero: false,
       navigating: false,
       x: 'no',
       y: 'no',
@@ -138,6 +148,30 @@ export default {
         },
         result: { success: false },
         status: { status: 0, text: '' },
+      },
+      apriltag_auto_recharge: {
+        goal: { command: 0 },
+        feedback: { status: 0 },
+        result: {},
+        
+      },
+      bunker_status:{
+        header:{
+          seq: 0,
+          stamp:{ secs: 0, nsecs: 0 },
+          frame_id: 'base_link'
+        },
+        linear_velocity: 0,
+        angular_velocity: 0,
+        base_state: 0,
+        control_mode: 0,
+        fault_code: 0,
+        battery_voltage: 0,
+        motor_states:{
+          current: 0,
+          rpm: 0,
+          temperature: 0
+        }
       },
       //publisher
       pubInterval: null,
@@ -339,7 +373,8 @@ export default {
         linear: { x: this.joystick.vertical, y: 0, z: 0, },
         angular: { x: 0, y: 0, z: this.joystick.horizontal, },
       })
-      if (!this.navigating) {
+      if (this.dragging || this.send_zero) {
+        if(this.send_zero) this.send_zero = false;
         topic.publish(message)
       }
     },
@@ -465,12 +500,22 @@ export default {
     startDrag() {
       this.dragging = true
       this.x = this.y = 0
+      this.controlCard = document.getElementById('control-card');
+      this.controlCard.addEventListener('mouseup', this.stopDrag);
+      document.body.addEventListener('mouseup', this.stopDrag);
+      document.addEventListener('mouseleave', this.stopDrag);
     },
     stopDrag() {
       this.dragging = false
+      this.send_zero = true
       this.x = this.y = 'no'
       this.dragCircleStyle.display = 'none'
       this.resetJoystickVals()
+      this.controlCard.removeEventListener('mouseleave', this.stopDrag);
+      this.controlCard.removeEventListener('mouseup', this.stopDrag);
+      this.controlCard = null
+      document.body.removeEventListener('mouseup', this.stopDrag);
+      document.removeEventListener('mouseleave', this.stopDrag);
     },
     doDrag(event) {
       if (this.dragging) {

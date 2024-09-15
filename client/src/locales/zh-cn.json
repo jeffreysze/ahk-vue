@@ -79,10 +79,15 @@
     "stop-plan-btn": "停止路线",
     "connect": "连接",
     "disconnect": "断开连接",
+    "advanced-action":{
+      "label":"进阶操作：",
+      "charge-btn": "充电"
+    },
     "robot-model": "机器人模型",
     "joystick": "操纵摇杆",
     "em-stop-btn": "急停",
-    "logs": "连接日志"
+    "logs": "连接日志",
+    "voltage": "电压："
   },
   "timetable": {
     "save_btn": "保存",

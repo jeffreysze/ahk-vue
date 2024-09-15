@@ -1,0 +1,21 @@
+<launch>
+
+    <node pkg="tf" type="static_transform_publisher" name="ROSbot_laser" args="0 0 0 3.14 0 0 base_link laser 100" />
+
+    <node pkg="route_admin_panel" type="serial_bridge.sh" name="bridge" output="screen"/>
+
+    <include file="$(find route_admin_panel)/launch/panel.launch"></include>
+
+    <include file="$(find rplidar_ros)/launch/rplidar.launch"></include>
+
+    <node pkg="move_base" type="move_base" name="move_base" output="screen">
+        <param name="recovery_behavior_enabled" value="true"/>
+        <param name="controller_frequency" value="10.0"/>
+        <rosparam file="$(find rosbot_navigation)/config/costmap_common_params.yaml" command="load" ns="global_costmap" />
+        <rosparam file="$(find rosbot_navigation)/config/costmap_common_params.yaml" command="load" ns="local_costmap" />
+        <rosparam file="$(find rosbot_navigation)/config/local_costmap_params.yaml" command="load" />
+        <rosparam file="$(find rosbot_navigation)/config/global_costmap_params.yaml" command="load" />
+        <rosparam file="$(find rosbot_navigation)/config/trajectory_planner.yaml" command="load" />
+    </node>
+
+</launch>

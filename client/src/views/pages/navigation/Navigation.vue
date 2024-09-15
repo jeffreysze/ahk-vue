@@ -27,6 +27,9 @@
     </VRow>
     <VRow>
       <VCol>
+        <v-btn class="mx-1" color="primary" variant="outlined" @click="advanced_action = !advanced_action">
+          <v-icon>mdi-dots-horizontal </v-icon>
+        </v-btn>
         <v-btn class="mx-1" @click="startDrawing('add_point')" :disabled="startAddPoint || connected == false || startLocalize ">
           {{ $t("navigation.add-point.btn") }}
         </v-btn>
@@ -42,7 +45,7 @@
         <v-btn class="mx-1" variant="outlined" :disabled="startAddPoint || connected == false || startLocalize" @click="continueRoute()" >
           {{ $t("navigation.start-plan-btn") }}
         </v-btn>
-        <v-btn class="mx-1" variant="outlined" :disabled="startAddPoint || connected == false || startLocalize" @click="continueRoute()">
+        <v-btn class="mx-1" variant="outlined" :disabled="startAddPoint || connected == false || startLocalize" @click="stopRoute()">
           {{ $t("navigation.stop-plan-btn") }}
         </v-btn>
         <v-btn class="mx-1" color="grey-800" variant="outlined" @click="changeCameraFeedStatus">
@@ -50,10 +53,23 @@
         </v-btn>
 
         <v-btn v-if="connected" color="error" variant="flat" :disabled="loading"
-          @click="stopNavigate(); disconnect();">{{ $t("navigation.disconnect") }}</v-btn>
+          @click="stopNavigate(); disconnect();">{{ $t("navigation.disconnect") }}
+        </v-btn>
         <v-btn v-else color="success" variant="flat" :disabled="loading"
-          @click="startNavigate(); connect();">{{ $t("navigation.connect") }}</v-btn>
+          @click="startNavigate(); connect();">{{ $t("navigation.connect") }}
+        </v-btn>
+        
       </VCol>
+    </VRow>
+    <br>
+    <hr>
+    <VRow v-if="advanced_action">
+      <v-col class="my-2 pb-0" >
+        {{ $t("navigation.advanced-action.label") }}
+        <v-btn color="primary" variant="outlined" :disabled="startAddPoint || connected == false || startLocalize"
+          @click="commandAutoRecharge(1)">{{ $t("navigation.advanced-action.charge-btn") }}
+        </v-btn>
+      </v-col>
     </VRow>
     <VRow style="margin-bottom:200px">
       <v-col sm="12" md="9">
@@ -82,7 +98,7 @@
         </v-responsive>
       </v-col>
       <v-col sm="12" md="3" style="background-color:#dadbf1; min-height: 175px">
-        <v-card class="text-center">
+        <v-card id="control-card" class="text-center">
           <v-card-title>
             <h4>{{ $t("navigation.joystick") }}</h4>
           </v-card-title>
@@ -95,6 +111,7 @@
             <p>X: {{ joystick.vertical.toFixed(3) }}</p>
             <p>Y: {{ joystick.horizontal.toFixed(3) }}</p>
             <br>
+            <p>{{ $t("navigation.voltage") }} {{ bunker_status.battery_voltage.toFixed(2) }} V</p>
             <v-btn color="error" variant="outlined" @click="executeEMStop" :disabled="connected == false">{{ $t("navigation.em-stop-btn") }}</v-btn>
           </v-card-text>
         </v-card>
@@ -135,7 +152,7 @@
     <template v-slot:default="{ isActive }">
       <v-card rounded="lg">
         <v-card-title class="d-flex justify-space-between align-center">
-          <div class="text-h5  ps-2">
+          <div class="text-h5 ps-2">
             {{ $t("navigation.add-plan.header") }}
           </div>
           <v-btn icon="mdi-close" variant="text" @click="isActive.value = false">
@@ -156,7 +173,7 @@
         <v-card-text class="pt-0">
           <v-expansion-panels v-model="panel" multiple>
             <v-expansion-panel>
-              <v-expansion-panel-title expand-icon="mdi-menu-down">
+              <v-expansion-panel-title expand-icon="mdi-menu-down" style="background:#f5f5f5">
                 <h3>{{ $t("navigation.add-plan.route-plan") }}</h3>
               </v-expansion-panel-title>
               <v-expansion-panel-text>
@@ -167,7 +184,7 @@
                     <v-btn class='mr-2 mb-1' color="primary" variant="outlined" @click="addToPlan('execute_action')"><v-icon>mdi-plus </v-icon>{{ $t("navigation.add-plan.route-plan-table.add-execute-action-btn") }}</v-btn>
                   </v-col>
                 </v-row>
-                <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table" disable-sort
+                <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header disable-sort
                   :headers="headerLocale('add_plan_headers')" :items="added_to_plan">
                   <template v-slot:item="{ item, index }">
                     <tr>
@@ -195,11 +212,11 @@
             </v-expansion-panel>
 
             <v-expansion-panel>
-              <v-expansion-panel-title expand-icon="mdi-menu-down">
+              <v-expansion-panel-title expand-icon="mdi-menu-down" style="background:#f5f5f5">
                 <h3>{{ $t("navigation.add-plan.defined-poses") }}</h3>
               </v-expansion-panel-title>
               <v-expansion-panel-text>
-                <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table"
+                <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header
                   :headers="headerLocale('defined_poses_headers')" :items="map_points">
                   <template v-slot:item="{ item, index }">
                     <tr>
@@ -217,7 +234,7 @@
               </v-expansion-panel-text>
             </v-expansion-panel>
             <v-expansion-panel>
-              <v-expansion-panel-title expand-icon="mdi-menu-down">
+              <v-expansion-panel-title expand-icon="mdi-menu-down" style="background:#f5f5f5">
                 <h3>{{ $t("navigation.add-plan.sequence-mode") }}</h3>
 
               </v-expansion-panel-title>
@@ -360,9 +377,16 @@ import { ROSLIB, MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
 export default {
   data() {
     return {
+      controlCard: null,
+      advanced_action: false,
       io_address: "http://192.168.1.14:8000",
       rosbridge_address: 'ws://192.168.1.14:9090',
       camera_port: '8080',
+
+      //io_address: "http://localhost:8000",
+      //rosbridge_address: 'ws://localhost:9090',
+      //camera_port: '8080',
+
       //io_address: "http://124.244.207.24:8000",
       //rosbridge_address: 'ws://124.244.207.24:9090',
       //camera_port: '9080',
@@ -372,7 +396,7 @@ export default {
       },
       socket: null,
       sources: [
-        { label: "Local (192.xxx.xxx.xxx)", id: "local", ros_address: 'ws://192.168.1.14:8090', camera_port: '8080' },
+        { label: "Local (192.xxx.xxx.xxx)", id: "local", ros_address: 'ws://localhost:8090', camera_port: '8080' },
         { label: "Public (124.xxx.xxx.xxx)", id: "public", ros_address: 'ws://124.244.207.24:9090', camera_port: '9080' },
       ],
       maps: [],
@@ -456,7 +480,7 @@ export default {
       logs: [],
       loading: true,
       dragging: false,
-      navigating: false,
+      send_zero: false,
       x: 'no',
       y: 'no',
       dragCircleStyle: {
@@ -499,11 +523,36 @@ export default {
         result: { success: false },
         status: { status: 0, text: '' },
       },
+      apriltag_auto_recharge: {
+        goal: { command: 0 },
+        feedback: { status: 0 },
+        result: {},
+        
+      },
+      bunker_status:{
+        header:{
+          seq: 0,
+          stamp:{ secs: 0, nsecs: 0 },
+          frame_id: 'base_link'
+        },
+        linear_velocity: 0,
+        angular_velocity: 0,
+        base_state: 0,
+        control_mode: 0,
+        fault_code: 0,
+        battery_voltage: 0,
+        motor_states:{
+          current: 0,
+          rpm: 0,
+          temperature: 0
+        }
+      },
       //publisher
       pubInterval: null,
       mapViewer: null,
       mapGridClient: null,
       interval: null,
+      statusInterval: null,
     }
   },
   mounted() {
@@ -1030,6 +1079,7 @@ export default {
           this.loading = false
           this.pubInterval = setInterval(this.publish, 100);
           this.setup3DViewer()
+          this.statusInterval = setInterval(this.readBunkerStatus, 5000);
         })
         this.ros.on('error', (error) => {
           console.log('Something went wrong when trying to connect')
@@ -1043,6 +1093,7 @@ export default {
           if (this.camera_feed) this.unsetCamera()
           this.unset3DViewer()
           clearInterval(this.pubInterval)
+          clearInterval(this.statusInterval)
           this.camera_feed = false
         })
       }
@@ -1058,7 +1109,11 @@ export default {
         angular: { x: 0, y: 0, z: this.joystick.horizontal, },
       })
       //if( this.joystick.vertical !=0 && this.joystick.horizontal !=0 ) {
-      if (!this.navigating) {
+      //  topic.publish(message)
+      //}
+      if (this.dragging || this.send_zero) {
+        if(this.send_zero) 
+          this.send_zero = false
         topic.publish(message)
       }
     },
@@ -1078,6 +1133,19 @@ export default {
         height: 240,
         topic: '/camera/color/image_raw',
         ssl: false,
+      })
+    },
+    readBunkerStatus: function(){
+      var self = this
+      let bunker_status_subs = new ROSLIB.Topic({
+        ros: this.ros,
+        name: '/bunker_status',
+        messageType: 'bunker_msgs/BunkerStatus'
+      })
+      bunker_status_subs.subscribe(function(msg){
+        console.log(self.bunker_status.battery_voltage = msg.battery_voltage)
+        bunker_status_subs.unsubscribe()
+
       })
     },
     unsetCamera: function () {
@@ -1152,20 +1220,6 @@ export default {
 
       this.viewer.scene.add(this.arrowNode);
 
-
-      /*            // Setup the URDF client.
-                  this.urdfClient = new ROS3D.UrdfClient({
-                      ros: this.ros,
-                      param: 'robot_description',
-                      tfClient: this.tfClient,
-                      // We use "path: location.origin + location.pathname"
-                      // instead of "path: window.location.href" to remove query params,
-                      // otherwise the assets fail to load
-                      path: location.origin + location.pathname,
-                      rootObject: this.viewer.scene,
-                      loader: ROS3D.COLLADA_LOADER_2
-                  })
-      */
     },
     unset3DViewer: function () {
       document.getElementById('visualization-canvas').innerHTML = ''
@@ -1185,12 +1239,22 @@ export default {
     startDrag() {
       this.dragging = true
       this.x = this.y = 0
+      this.controlCard = document.getElementById('control-card');
+      this.controlCard.addEventListener('mouseup', this.stopDrag);
+      document.body.addEventListener('mouseup', this.stopDrag);
+      document.addEventListener('mouseleave', this.stopDrag);
     },
     stopDrag() {
       this.dragging = false
+      this.send_zero = true
       this.x = this.y = 'no'
       this.dragCircleStyle.display = 'none'
       this.resetJoystickVals()
+      this.controlCard.removeEventListener('mouseleave', this.stopDrag);
+      this.controlCard.removeEventListener('mouseup', this.stopDrag);
+      this.controlCard = null
+      document.body.removeEventListener('mouseup', this.stopDrag);
+      document.removeEventListener('mouseleave', this.stopDrag);
     },
     doDrag(event) {
       if (this.dragging) {
@@ -1297,11 +1361,33 @@ export default {
 
       this.goal.on('result', (result) => {
         this.action.result = result
-        this.navigating = false
       })
-      this.navigating = true
       this.goal.send()
     },
+    commandAutoRecharge: function(id){
+      let ac = new ROSLIB.ActionClient({
+        ros: this.ros,
+        serverName: '/auto_recharge_action',
+        actionName: 'apriltag_auto_recharge/ApriltagAutorechargeAction',
+      })
+      this.goal = new ROSLIB.Goal({
+        actionClient: ac,
+        goalMessage:{
+          command: id
+        }
+      })
+      this.goal.on('status', (status)=>{
+
+      })
+      this.goal.on('feedback', (feedback) => {
+        
+      })
+
+      this.goal.on('result', (result) => {
+        
+      })
+      this.goal.send()
+    }
   },
 }
 </script>

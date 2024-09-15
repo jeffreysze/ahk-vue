@@ -112,7 +112,7 @@
       <v-data-table items-per-page="-1" :hide-default-footer="true" fixed-header class="bottom-table pb-3" style="min-width:70%;max-width:80%"
         :headers="headerLocale('map_headers')" :items="map_points">
         <template v-slot:item="{ item, index }">
-          <tr>
+          <tr @mouseover="changeArrowColor(item.id)" @mouseleave="resetArrowColor(item.id)">
             <td>{{ item.id }}</td>
             <td>{{ item.x }}</td>
             <td>{{ item.y }}</td>
@@ -354,19 +354,19 @@ import { ROSLIB, MJPEGCANVAS, THREE, ROS3D } from '@/utils/libs.js';
 export default {
   data() {
     return {
-      //io_address: "http://192.168.1.14:8000",
-      //rosbridge_address: 'ws://192.168.1.14:9090',
-      //camera_port: '8080',
-      io_address: "http://124.244.207.24:8000",
-      rosbridge_address: 'ws://124.244.207.24:9090',
-      camera_port: '9080',
+      io_address: "http://192.168.3.12:8000",
+      rosbridge_address: 'ws://192.168.3.12:9090',
+      camera_port: '8080',
+      //io_address: "http://124.244.207.24:8000",
+      //rosbridge_address: 'ws://124.244.207.24:9090',
+      //camera_port: '9080',
       snackbar: {
         open: false,
         message: "",
       },
       socket: null,
       sources: [
-        { label: "Local (192.xxx.xxx.xxx)", id: "local", ros_address: 'ws://192.168.1.14:8090', camera_port: '8080' },
+        { label: "Local (192.xxx.xxx.xxx)", id: "local", ros_address: 'ws://192.168.3.12:8090', camera_port: '8080' },
         { label: "Public (124.xxx.xxx.xxx)", id: "public", ros_address: 'ws://124.244.207.24:9090', camera_port: '9080' },
       ],
       maps: [],
@@ -436,10 +436,6 @@ export default {
         y: null,
       },
       theta: null,
-      arrowStartX: 0,
-      arrowStartY: 0,
-      arrowEndX: 0,
-      arrowEndY: 0,
       panel: [0, 1, 2],
       sequence_mode: "SINGLE_RUN",
       added_to_plan: [],
@@ -451,7 +447,6 @@ export default {
       logs: [],
       loading: true,
       dragging: false,
-      navigating: false,
       x: 'no',
       y: 'no',
       dragCircleStyle: {
@@ -648,6 +643,16 @@ export default {
           else if(self.startLocalize)
             self.snackbar.message = this.$t("navigation.localize.direction-message");
           self.snackbar.open = true;
+          this.interactArrow = new ROS3D.Arrow({
+            ros: this.ros,
+            tfClient: this.tfClient,
+            shaftDiameter: 0.2, headDiameter: 0.3, headLength: 0.4,
+            material: new ROS3D.makeColorMaterial(0, 0, 1, 0.5),
+            origin: new THREE.Vector3(x, y, 0),
+          })
+          this.interactArrow.name = 'usrClickArrow'
+          console.log(this.interactArrow)
+          this.viewer.scene.add(this.interactArrow)
         }
         else if (self.selectEndPoint == false) {
           self.endPoint.x = x;
@@ -669,6 +674,8 @@ export default {
             self.snackbar.open = true;
           }
           self.openConfirmAddPoint();
+          let obj = this.viewer.scene.getObjectByName('usrClickArrow')
+          if(obj != null) this.viewer.scene.remove(obj)
         }
       }
     },
@@ -720,6 +727,14 @@ export default {
       self.startLocalize = false;
       self.selectEndPoint = false;
       self.selectStartPoint = false;
+    },
+    changeArrowColor(id){
+      let obj = this.viewer.scene.getObjectByName("arrow_"+id)
+      if(obj != null) obj.setColor("0x00FFFF");
+    },
+    resetArrowColor(id){
+      let obj = this.viewer.scene.getObjectByName("arrow_"+id)
+      if(obj != null) obj.setColor("0x000000");
     },
     driveToTarget(target_id) {
       var self = this; 
@@ -915,8 +930,28 @@ export default {
         console.log(message);
       });
       self.socket.on('get_targets', function (targets){
+        if(self.map_points!=null){
+          self.map_points.forEach(function(p){
+            let name = "arrow_"+p.id;
+            let obj = self.viewer.scene.getObjectByName(name)
+            if(obj != null) self.viewer.scene.remove(obj)
+          });
+        }
         console.log(targets);
         self.map_points = targets;
+        self.map_points.forEach(function(p){
+          let arrow = new ROS3D.Arrow({
+            ros: self.ros,
+            tfClient: self.tfClient,
+            shaftDiameter: 0.15, headDiameter: 0.3, headLength: 0.4,
+            material: new ROS3D.makeColorMaterial(0, 0, 0, 0.8),
+            origin: new THREE.Vector3(p.x, p.y, 0),
+            direction: new THREE.Vector3(Math.cos(p.theta), Math.sin(p.theta), 0),
+          });
+          arrow.name = 'arrow_'+p.id;
+          console.log(arrow);
+          self.viewer.scene.add(arrow);
+        });
       });
       self.socket.on('localized', function (message){
         self.start
@@ -939,6 +974,11 @@ export default {
         self.snackbar.message = self.$t("navigation.add-plan.save-route-message");
         self.snackbar.open = true;
         self.add_plan_dialog = false;
+      });
+      self.socket.on('route_error', function(message){
+        console.log("error")
+        self.snackbar.message = self.$t("NavID error in route plan");
+        self.snackbar.open = true;
       });
     },
     stopNavigate() {
@@ -988,8 +1028,7 @@ export default {
         linear: { x: this.joystick.vertical, y: 0, z: 0, },
         angular: { x: 0, y: 0, z: this.joystick.horizontal, },
       })
-      //if( this.joystick.vertical !=0 && this.joystick.horizontal !=0 ) {
-      if (!this.navigating) {
+      if( this.joystick.vertical !=0 && this.joystick.horizontal !=0 ) {
         topic.publish(message)
       }
     },
@@ -1023,6 +1062,7 @@ export default {
         antialias: true,
       })
       this.viewer.renderer.domElement.addEventListener('click', this.mouseClickHandler)
+      this.viewer.renderer.domElement.addEventListener('mousemove', this.mouseDragHandler)
       this.viewer.cameraControls.userRotateSpeed = 0
       this.viewer.cameraControls.autoRotate = false
       this.viewer.cameraControls.autoRotateSpeed = 0
@@ -1164,6 +1204,23 @@ export default {
       }
       //let vector = new THREE.Vector3((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1, 0.5)
     },
+    mouseDragHandler(event) {
+      if((this.startLocalize || this.startAddPoint) && this.selectStartPoint){
+        let rect = event.target.getBoundingClientRect()
+        let mouseX = -(event.clientX - rect.left - rect.width / 2)
+        let mouseY = -(event.clientY - rect.top - rect.height / 2)
+
+        let dpp = this.viewer.camera.position.z * Math.tan(Math.PI * (this.viewer.camera.fov / 2) / 180) / (rect.height / 2)
+
+        let mx = dpp * mouseY + this.viewer.camera.position.x - this.viewer.scene.position.x
+        let my = dpp * mouseX + this.viewer.camera.position.y - this.viewer.scene.position.y
+        let obj = this.viewer.scene.getObjectByName('usrClickArrow')
+          if(obj != null) {
+            let angle = new THREE.Vector3(mx-obj.position.x,my-obj.position.y,0).normalize()
+            obj.setDirection(angle)
+          }
+      }
+    },
     setJoystickVals() {
       this.joystick.vertical = -1 * ((this.y / 200) - 0.5)
       this.joystick.horizontal = -1 * ((this.x / 200) - 0.5)
@@ -1210,9 +1267,7 @@ export default {
 
       this.goal.on('result', (result) => {
         this.action.result = result
-        this.navigating = false
       })
-      this.navigating = true
       this.goal.send()
     },
   },

@@ -61,13 +61,13 @@ const upgradeBanner = computed(() => {
   <!-- SideNav when showing Simplified Chinese -->
 
     <template #vertical-nav-content v-if="$i18n.locale=='zh'">
-      <!--VerticalNavLink
+      <VerticalNavLink
         :item="{
           title: '仪表板',
           icon: 'bx-home',
           to: '/dashboard',
         }"
-      /-->
+      />
       <VerticalNavLink
         :item="{
           title: '创建地图',
